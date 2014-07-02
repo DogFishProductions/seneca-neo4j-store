@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/piccoloaiutante/seneca-neo4j-store.png?branch=master)](https://travis-ci.org/piccoloaiutante/seneca-neo4j-store)
 # seneca-neo4j-store
 
 ### Seneca node.js data-storage plugin for Neo4j.
