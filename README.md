@@ -78,7 +78,7 @@ The standard Seneca query format is supported:
 - `entity.list$({f1:v1,...},{limit$:10})` means only return 10 results
 - `entity.list$({f1:v1,...},{skip$:5})` means skip the first 5
 - `entity.list$({f1:v1,...},{fields$:['field1','field2']})` means only return the listed fields (avoids pulling lots of data out of the database) NOT SUPPORTED
-- you can use sort$, limit$, skip$ and fields$ together
+- you can use sort$, limit$ and skip$ together
 
 
 ###Native Driver
@@ -99,3 +99,9 @@ entity.native$(function(err, dbinst){
 })
 ```
 
+
+## Test
+
+```bash
+npm test
+```
