@@ -23,7 +23,7 @@ var testcount = 0;
 
 describe('data-store', function(){
   // Set the timeout for your tests.
-  this.timeout(3000);
+  this.timeout(30000);
 
   it('basic', function(done){
     testcount++;
