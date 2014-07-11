@@ -1,5 +1,8 @@
 [![Build Status](https://travis-ci.org/piccoloaiutante/seneca-neo4j-store.png?branch=master)](https://travis-ci.org/piccoloaiutante/seneca-neo4j-store)
+
 # seneca-neo4j-store
+
+[![NPM](https://nodei.co/npm/seneca-neo4j-store.png)](https://nodei.co/npm/seneca-neo4j-store/)
 
 ### Seneca node.js data-storage plugin for Neo4j.
 
@@ -18,7 +21,7 @@ persistence.
 If you're using this module, feel free to contact me on twitter if you
 have any questions! :) [@piccoloaiutante](http://twitter.com/piccoloaiutante)
 
-Current Version: 0.1.2
+Current Version: 0.1.3
 
 Tested on: Node 0.10.28, Seneca 0.5.17
 
@@ -26,10 +29,9 @@ Tested on: Node 0.10.28, Seneca 0.5.17
 
 ```JavaScript
 var seneca = require('seneca')()
-seneca.use('mongo-store',{
-  name:'dbname',
-  host:'127.0.0.1',
-  port:27017
+seneca.use('neo4j-store',{
+    host:'localhost',
+    port:7474
 })
 
 seneca.ready(function(){
