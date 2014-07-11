@@ -26,10 +26,9 @@ Tested on: Node 0.10.28, Seneca 0.5.17
 
 ```JavaScript
 var seneca = require('seneca')()
-seneca.use('mongo-store',{
-  name:'dbname',
-  host:'127.0.0.1',
-  port:27017
+seneca.use('neo4j-store',{
+    host:'localhost',
+    port:7474
 })
 
 seneca.ready(function(){
