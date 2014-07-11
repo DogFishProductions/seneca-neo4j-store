@@ -3,7 +3,6 @@ language: node_js
 node_js:
     - "0.11"
     - "0.10"
-    - "0.8"
 
 jdk:
     - oraclejdk7  # needed for local Neo4j 2.0+
