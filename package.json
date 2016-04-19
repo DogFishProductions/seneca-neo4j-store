@@ -1,0 +1,30 @@
+{
+  "name": "seneca-neo4j-store",
+  "version": "0.0.1",
+  "license": "UNLICENSED",
+  "author": {
+    "name": "Paul Nebel",
+    "email": "paulne@redjamjar.net"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://bitbucket.org/harryjam/seneca-neo4j-store"
+  },
+  "description": "Seneca microservice for Neo4j graph database",
+  "scripts": {
+    "test": "lab ../tests/*.test.js -r console -v -L -m 3000 -t 72"
+  },
+  "engines": {
+    "node": ">=0.12.0"
+  },
+  "devDependencies": {
+    "util": "^0.10.3" 
+  },
+  "dependencies": {
+    "q": "^1.4.1",
+    "request": "^2.69.0",
+    "seneca": "^1.x.x",
+    "lodash": "~3.10.1",
+    "node-uuid": "^1.4.7"
+  }
+}
