@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://bitbucket.org/harryjam/seneca-neo4j-store"
+    "url": "https://bitbucket.org/harryjam/mtac"
   },
   "description": "Seneca microservice for Neo4j graph database",
   "scripts": {

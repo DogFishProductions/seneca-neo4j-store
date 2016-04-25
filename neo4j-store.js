@@ -24,60 +24,61 @@ var Eraro = require('eraro')({
 
 var _store_name = 'neo4j-store';
 var _action_role = 'neo4j';
+var _internals = {};
+
+var executeCypher = function(cypher,params) {
+	var _deferred = Q.defer();
+	var _json = { statements:[ { statement: cypher, parameters: params} ] };
+	var _opts = _.clone(_internals.opts);
+	_opts.json = _json;
+	var _execute = Q.nbind(Request.post, Request);
+	
+	_execute(_opts)
+	.then(function(response) {
+		var _body = response[1];
+		if (_body) {
+			var _errors = _body.errors;
+			var _results = _body.results;
+			if (_errors && !_.isEmpty(_errors)) {
+				_deferred.reject(_errors);
+			}
+			else {
+				var _answer = [];
+				_results.forEach(function(result) {
+					var _data = result.data;
+					if (_data) {
+						_data.forEach(function(entry) {
+							var _row = entry.row;
+							if (_row) {
+								_answer.push(_row[0])
+							}
+						})
+					}
+				})
+				_deferred.resolve(_answer);
+			}
+		}
+		else {
+			_deferred.resolve();
+		}
+	})
+	.catch(function(err) {
+		_deferred.reject({ err: err });
+	});
+
+	return _deferred.promise;
+}
 
 module.exports = function(options) {
 	var _seneca = this;
 
 	var _opts = _seneca.util.deepextend(DefaultConfig, options);
-	var _internals = {
+	_internals = {
 		name: _store_name,
 		opts: _opts
 	}
 
 	var _act = Q.nbind(_seneca.act, _seneca);
-
-	function executeCypher(cypher,params) {
-		var _deferred = Q.defer();
-		var _json = { statements:[ { statement: cypher, parameters: params} ] };
-		var _opts = _.clone(_internals.opts);
-		_opts.json = _json;
-		var _execute = Q.nbind(Request.post, Request);
-		
-		_execute(_opts)
-		.then(function(response) {
-			var _body = response[1];
-			if (_body) {
-				var _errors = _body.errors;
-				var _results = _body.results;
-				if (_errors && !_.isEmpty(_errors)) {
-					_deferred.reject(_errors);
-				}
-				else {
-					var _answer = [];
-					_results.forEach(function(result) {
-						var _data = result.data;
-						if (_data) {
-							_data.forEach(function(entry) {
-								var _row = entry.row;
-								if (_row) {
-									_answer.push(_row[0])
-								}
-							})
-						}
-					})
-					_deferred.resolve(_answer);
-				}
-			}
-			else {
-				_deferred.resolve();
-			}
-		})
-		.catch(function(err) {
-			_deferred.reject({ err: err });
-		});
-
-		return _deferred.promise;
-	}
 
 	// the store interface returned to seneca
 	var store = {
@@ -105,8 +106,6 @@ module.exports = function(options) {
 				function(statementObj) {
 					var _cypher = statementObj.query.statement;
 					var _params = statementObj.query.parameters;
-					console.log("statement: " + util.inspect(_cypher));
-					console.log("parameters: " + util.inspect(_params));
 					executeCypher(_cypher, _params)
 					.done(
 						function(result) {
@@ -115,14 +114,14 @@ module.exports = function(options) {
 							return next(null, _ent);
 						},
 						function(err) {
-							_seneca.log.error(_statement, _params, err);
-							return next(err, { code: statementObj.operation, tag: args.tag$, store: store.name, query: _statement, error: err });
+							_seneca.log.error(_cypher, _params, err);
+							return next(err, { code: statementObj.operation, tag: args.tag$, store: store.name, query: _cypher, error: err });
 						}
 					);
 				},
 				function(err) {
 					_seneca.log.error('Neo4j ' + statementObj.operation + ' error', err);
-          			return next(err, { code: err.operation, tag: args.tag$, store: store.name, query: err._statement, error: err.error });
+          			return next(err, { code: err.operation, tag: args.tag$, store: store.name, query: _cypher, error: err.error });
 				}
 			);
 		},
@@ -150,27 +149,30 @@ module.exports = function(options) {
 					var _params = statementObj.query.parameters;
 					executeCypher(_cypher, _params)
 					.done(
-						function(result) {
-							var _ent = args.qent.make$(result[0]);
-							_seneca.log(args.tag$, _cypher, _ent);
-							return next(null, _ent);
+						function(results) {
+							if (results[0]) {
+								var _ent = args.qent.make$(results[0]);
+								_seneca.log(args.tag$, _cypher, _ent);
+								return next(null, _ent);
+							}
+							return next(null, []);
 						},
 						function(err) {
-							_seneca.log.error(_statement, _params, err);
-							return next(err, { code: statementObj.operation, tag: args.tag$, store: store.name, query: _statement, error: err });
+							_seneca.log.error(_cypher, _params, err);
+							return next(err, { code: statementObj.operation, tag: args.tag$, store: store.name, query: _cypher, error: err });
 						}
 					);
 				},
 				function(err) {
 					_seneca.log.error('Neo4j ' + statementObj.operation + ' error', err);
-          			return next(err, { code: err.operation, tag: args.tag$, store: store.name, query: err._statement, error: err.error });
+          			return next(err, { code: err.operation, tag: args.tag$, store: store.name, query: _cypher, error: err.error });
 				}
 			);
 		},
 
 		/** @function list
 		 *
-		 *	@summary Return a list of object based on the supplied query, if no query is supplied then return all objects of that type.
+		 *	@summary Return a list of objects based on the supplied query, if no query is supplied then return all objects of that type.
 		 *
 		 *	@since 1.0.0
 		 *
@@ -182,6 +184,11 @@ module.exports = function(options) {
 		 *	@returns 	{Object}	The list of entities.
 		 */
 		list: function(args, next) {
+			var _count = args.q.count$ || false;
+			var _exists = args.q.exists$ || false;
+			if (_exists) {
+				_count = true;
+			}
 			_act({ role: _action_role, hook: 'create_list_statement', target: store.name}, args)
 			.done(
 				function(statementObj) {
@@ -190,6 +197,12 @@ module.exports = function(options) {
 					executeCypher(_cypher, _params)
 					.done(
 						function(results) {
+							if (_count) {
+								return next(null, results);
+							}
+							if (_exists) {
+								return next(null, (results > 0));
+							}
 							var _list = [];
 							results.forEach(function(result) {
 								_list.push(args.qent.make$(result));
@@ -198,14 +211,14 @@ module.exports = function(options) {
 							return next(null, _list);
 						},
 						function(err) {
-							_seneca.log.error(_statement, _params, err);
-							return next(err, { code: statementObj.operation, tag: args.tag$, store: store.name, query: _statement, error: err });
+							_seneca.log.error(_cypher, _params, err);
+							return next(err, { code: statementObj.operation, tag: args.tag$, store: store.name, query: _cypher, error: err });
 						}
 					);
 				},
 				function(err) {
 					_seneca.log.error('Neo4j ' + statementObj.operation + ' error', err);
-          			return next(err, { code: err.operation, tag: args.tag$, store: store.name, query: err._statement, error: err.error });
+          			return next(err, { code: err.operation, tag: args.tag$, store: store.name, query: _cypher, error: err.error });
 				}
 			);
 		},
@@ -271,14 +284,14 @@ module.exports = function(options) {
 							return next(null, _result);
 						},
 						function(err) {
-							_seneca.log.error(_statement, _params, err);
-							return next(err, { code: statementObj.operation, tag: args.tag$, store: store.name, query: _statement, error: err });
+							_seneca.log.error(_cypher, _params, err);
+							return next(err, { code: statementObj.operation, tag: args.tag$, store: store.name, query: _cypher, error: err });
 						}
 					);
 				},
 				function(err) {
 					_seneca.log.error('Neo4j ' + statementObj.operation + ' error', err);
-          			return next(err, { code: err.operation, tag: args.tag$, store: store.name, query: err._statement, error: err.error });
+          			return next(err, { code: err.operation, tag: args.tag$, store: store.name, query: _cypher, error: err.error });
 				}
 			);
 		},
@@ -289,45 +302,7 @@ module.exports = function(options) {
 
 		native: function(args, next) {
 			// TODO: Implement this as necessary
-		} //,
-
-		// Additional methods
-
-		/** @function constrain
-		 *
-		 *	@summary Creates a constraint on a node based on the supplied arguments.
-		 *	Note that constraints are made on node types (not on specific nodes) and can only be added one at a time.
-		 *
-		 *	@since 1.0.0
-		 *
-		 *	@param 	 	{Object}	args - The arguments.
-		 *	@param 	 	{Object}	args.q - The query parameters.
-		 *	@param 	 	{Object}	args.qent - The node to be constrained.
-		 *	@param 	 	{middlewareCallback}	next - The next callback in the sequence.
-		 *
-		 *	@returns 	{Object}	The list of entities.
-		 */
-/*		constrain: function(args, next) {
-
-		},//*/
-
-		/** @function relateUniquely
-		 *
-		 *	@summary Creates a unique relationship between nodes based on the supplied arguments.
-		 *
-		 *	@since 1.0.0
-		 *
-		 *	@param 	 	{Object}	args - The arguments.
-		 *	@param 	 	{Object}	args.q - The query parameters.
-		 *	@param 	 	{Object}	args.from - The 'from' node in the relationship.
-		 *	@param 	 	{Object}	args.to - The 'to' node in the relationship.
-		 *	@param 	 	{middlewareCallback}	next - The next callback in the sequence.
-		 *
-		 *	@returns 	{Object}	The list of entities.
-		 */
-/*		relateUniquely: function(args, next) {
-
-		}//*/
+		}
 	}
 
 	/**
@@ -341,14 +316,19 @@ module.exports = function(options) {
 	});
 
 	_seneca.add({ role: _action_role, hook: 'create_load_statement'}, function(args, next) {
-		var _statement = StatementBuilder.loadStatement(args.qent, args.q);
-		
+		var _statement = StatementBuilder.loadStatement(args.qent, args.q);		
 		return next(null, { query: _statement, operation: 'load' });
 	});
 
 	_seneca.add({ role: _action_role, hook: 'create_list_statement'}, function(args, next) {
-		var _statement = StatementBuilder.listStatement(args.qent, args.q);
+		var _q = args.q;
+		var _statement;
 
+		if (_q["relationship~"]) {
+			_statement = StatementBuilder.retrieveRelatedStatement(args.qent, _q);
+			return next(null, { query: _statement, operation: 'list related' });
+		}
+		_statement = StatementBuilder.listStatement(args.qent, _q);
 		return next(null, { query: _statement, operation: 'list' });
 	});
 
@@ -357,6 +337,11 @@ module.exports = function(options) {
 		// If the entity has an id field this is used as the primary key by the underlying database and the save is considered an update operation.
 		var _update = !!_ent.id;
 		var _statement;
+
+		if (_ent["relationship~"]) {
+			_statement = StatementBuilder.uniqueRelationshipStatement(_ent);
+			return next(null, { query: _statement, operation: 'save relationship' })
+		}
 
 		if (_update) {
 			_statement = StatementBuilder.updateStatement(_ent);
@@ -369,7 +354,6 @@ module.exports = function(options) {
 			_statement = StatementBuilder.saveStatement(_ent);
 			return next(null, { query: _statement, operation: 'save' });
 		}
-
 		// If the entity does not have an id field one must be generated and the save is considered an insert operation.
 		_act({ role: _action_role, hook: 'generate_id', target: args.target })
 		.done(
@@ -387,25 +371,12 @@ module.exports = function(options) {
 
 	_seneca.add({ role: _action_role, hook: 'create_remove_statement'}, function(args, next) {
 		var _statement = StatementBuilder.removeStatement(args.qent, args.q);
-
 		return next(null, { query: _statement, operation: 'remove' });
 	});
 
 	_seneca.add({ role: _action_role, hook: 'generate_id', target: store.name}, function(args, next) {
 		return next(null, { id: Uuid() });
 	});
-/*
-	_seneca.add({ role: _action_role, hook: 'create_constraint_statement'}, function(args, next) {
-		var _statement = StatementBuilder.constraintStatement(args.qent, args.q);
-
-		return next(null, { query: _statement, operation: 'constrain' });
-	});
-
-	_seneca.add({ role: _action_role, hook: 'create_unique_relationship_statement'}, function(args, next) {
-		var _statement = StatementBuilder.uniqueRelationshipStatement(args.qent, args.q);
-
-		return next(null, { query: _statement, operation: 'relateUniquely' });
-	});//*/
 
 	return { name: store.name, tag: _meta.tag}
 }
