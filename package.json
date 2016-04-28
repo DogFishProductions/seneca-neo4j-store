@@ -1,24 +1,47 @@
 {
   "name": "seneca-neo4j-store",
   "version": "0.0.1",
-  "license": "UNLICENSED",
+  "description": "Neo4j graph database layer for Seneca framework",
+  "main": "neo4j-store.js",
+  "license": "MIT",
   "author": {
-    "name": "Paul Nebel",
-    "email": "paulne@redjamjar.net"
+    "name": "Paul Nebel (http://www.redjamjar.net)",
+    "email": "paul.nebel@redjamjar.net"
   },
+  "bugs": {
+    "url": "https://github.com/redjamjar/seneca-neo4j-store/issues"
+  },
+  "homepage": "https://github.com/redjamjar/seneca-neo4j-store",
   "repository": {
     "type": "git",
-    "url": "https://bitbucket.org/harryjam/mtac"
+    "url": "https://github.com/redjamjar/seneca-neo4j-store.git"
   },
-  "description": "Seneca microservice for Neo4j graph database",
   "scripts": {
-    "test": "lab ../tests/*.test.js -r console -v -L -m 3000 -t 72"
+    "test": "lab test/*.test.js -r console -v -L -m 10000 -t 72",
+    "up": "docker-compose up neo4j server",
+    "start": "docker-compose start neo4j server",
+    "stop": "docker-compose stop neo4j server",
+    "lint": "lab -dL",
+    "coverage": "lab -s test/*test.js  -r lcov | coveralls",
+    "annotate": "docco neo4j-store.js -o doc"
   },
+  "keywords": [
+    "seneca",
+    "neo4j",
+    "graph",
+    "plugin"
+  ],
   "engines": {
     "node": ">=0.12.0"
   },
   "devDependencies": {
-    "util": "^0.10.3" 
+    "util": "^0.10.3",
+    "eslint-config-seneca": "1.x.x",
+    "eslint-plugin-hapi": "4.x.x",
+    "eslint-plugin-standard": "1.x.x",
+    "lab": "6.x.x",
+    "docco": "0.7.0",
+    "seneca-store-test": "1.0.0"
   },
   "dependencies": {
     "q": "^1.4.1",

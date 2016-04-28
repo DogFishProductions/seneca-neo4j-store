@@ -1,382 +1,545 @@
+/* jslint node: true */
 'use strict'
-
-var util = require('util');
 
 /**
  * This callback type is called `middlewareCallback` and is displayed as a global symbol.
  *
  * @callback middlewareCallback
- * @param 		{Object} 	[err] - Error object
+ * @param     {Object}  [err] - Error object
  */
 
-var _ = require('lodash');
-var Request = require('request');
-var Uuid = require('node-uuid');
-var DefaultConfig = require('./default_config.json');
-var StatementBuilder = require('./lib/statement-builder.js');
-var GraphStore = require('./lib/graph-util');
+var _ = require('lodash')
+var Request = require('request')
+var Uuid = require('node-uuid')
+var DefaultConfig = require('./default_config.json')
+var StatementBuilder = require('./lib/statement-builder.js')
+var GraphStore = require('./lib/graph-util')
 
-var Q = require('q');
+var Q = require('q')
 
-var Eraro = require('eraro')({
-	package: 'neo4j'
-});
+var _storeName = 'neo4j-store'
+var _actionRole = 'neo4j'
+var _internals = {}
 
-var _store_name = 'neo4j-store';
-var _action_role = 'neo4j';
-var _internals = {};
+/** @function executeCypher
+ *
+ *  @summary Runs a query on the graphstore and returns the result.
+ *
+ *  @since 1.0.0
+ *
+ *  @param    {Object}  cypher - The query to be answered.
+ *  @param    {Object}  params - The parameters required by the query.
+ *
+ *  @returns  {Promise} The promise of a result.
+ */
+var executeCypher = function (cypher, params) {
+  var _deferred = Q.defer()
+  var _json = { statements: [ { statement: cypher, parameters: params } ] }
+  var _opts = _.clone(_internals.opts.conn)
+  _opts.json = _json
+  var _execute = Q.nbind(Request.post, Request)
 
-var executeCypher = function(cypher,params) {
-	var _deferred = Q.defer();
-	var _json = { statements:[ { statement: cypher, parameters: params} ] };
-	var _opts = _.clone(_internals.opts);
-	_opts.json = _json;
-	var _execute = Q.nbind(Request.post, Request);
-	
-	_execute(_opts)
-	.then(function(response) {
-		var _body = response[1];
-		if (_body) {
-			var _errors = _body.errors;
-			var _results = _body.results;
-			if (_errors && !_.isEmpty(_errors)) {
-				_deferred.reject(_errors);
-			}
-			else {
-				var _answer = [];
-				_results.forEach(function(result) {
-					var _data = result.data;
-					if (_data) {
-						_data.forEach(function(entry) {
-							var _row = entry.row;
-							if (_row) {
-								_answer.push(_row[0])
-							}
-						})
-					}
-				})
-				_deferred.resolve(_answer);
-			}
-		}
-		else {
-			_deferred.resolve();
-		}
-	})
-	.catch(function(err) {
-		_deferred.reject({ err: err });
-	});
+  _execute(_opts)
+  .then(function (response) {
+    var _body = response[1]
+    if (_body) {
+      var _errors = _body.errors
+      var _results = _body.results
+      if (_errors && !_.isEmpty(_errors)) {
+        _deferred.reject(_errors)
+      }
+      else {
+        var _answer = []
+        _results.forEach(function (result) {
+          var _data = result.data
+          if (_data) {
+            _data.forEach(function (entry) {
+              var _row = entry.row
+              if (_row) {
+                _answer.push(_row[0])
+              }
+            })
+          }
+        })
+        _deferred.resolve(_answer)
+      }
+    }
+    else {
+      _deferred.resolve()
+    }
+  })
+  .catch(function (err) {
+    _deferred.reject({ err: err })
+  })
 
-	return _deferred.promise;
+  return _deferred.promise
 }
 
-module.exports = function(options) {
-	var _seneca = this;
+module.exports = function (options) {
+  var _seneca = this
 
-	var _opts = _seneca.util.deepextend(DefaultConfig, options);
-	_internals = {
-		name: _store_name,
-		opts: _opts
-	}
+  var _opts = _seneca.util.deepextend(DefaultConfig, options)
+  _internals = {
+    name: _storeName,
+    opts: _opts
+  }
 
-	var _act = Q.nbind(_seneca.act, _seneca);
+  var _act = Q.nbind(_seneca.act, _seneca)
 
-	// the store interface returned to seneca
-	var store = {
+  /** @function performAction
+   *
+   *  @summary Generates a query and passes it to the graphstore.
+   *
+   *  Calls the supplied hook to generate a query and passes it to the graphstore for resolution.
+   *  Performs the supplied success function if results are returned. This method should be passed
+   *  the seneca instance as its context when called.
+   *
+   *  @since 1.0.0
+   *
+   *  @param    {String}  hook - The name of the query to be generated.
+   *  @param    {Function}  success - The function to be called if the query returns a result.
+   *  @param    {Object}  args - The original query arguments.
+   *  @param    {middlewareCallback}  next - The next callback in the sequence.
+   */
+  var performAction = function (hook, success, args, next) {
+    var _self = this
+    _act({ role: _actionRole, hook: hook, target: store.name }, args)
+    .done(
+      function (statementObj) {
+        var _cypher = statementObj.query.statement
+        var _params = statementObj.query.parameters
+        var _context = {
+          args: args,
+          next: next,
+          cypher: _cypher,
+          seneca: _self
+        }
+        executeCypher(_cypher, _params)
+        .done(
+          function (result) {
+            success.call(_context, result)
+          },
+          function (err) {
+            _seneca.log.error(_cypher, _params, err)
+            return next(err, { code: statementObj.operation, tag: args.tag$, store: store.name, query: _cypher, error: err })
+          }
+        )
+      },
+      function (err) {
+        _seneca.log.error('Neo4j ' + hook + ' error', err)
+        return next(err, { code: err.operation, tag: args.tag$, store: store.name, error: err.error })
+      }
+    )
+  }
 
-		// methods required by store interface
-		name: _store_name,
+  // the store interface returned to seneca
+  var store = {
 
-    	/** @function save
-		 *
-		 *	@summary Saves entity to database.
-		 *
-		 *	Save the data as specified in the entitiy block on the arguments object.
-		 *
-		 *	@since 1.0.0
-		 *
-		 *	@param 	 	{Object}	args - The arguments.
-		 *	@param 	 	{Object}	args.ent - The entity to be saved.
-		 *	@param 	 	{middlewareCallback}	next - The next callback in the sequence.
-		 *
-		 *	@returns 	{Object}	The saved entity.
-		 */
-		save: function(args, next) {
-			_act({ role: _action_role, hook: 'create_save_statement', target: store.name}, args)
-			.done(
-				function(statementObj) {
-					var _cypher = statementObj.query.statement;
-					var _params = statementObj.query.parameters;
-					executeCypher(_cypher, _params)
-					.done(
-						function(result) {
-							var _ent = args.ent.make$(result[0]);
-							_seneca.log(args.tag$, _cypher, _ent);
-							return next(null, _ent);
-						},
-						function(err) {
-							_seneca.log.error(_cypher, _params, err);
-							return next(err, { code: statementObj.operation, tag: args.tag$, store: store.name, query: _cypher, error: err });
-						}
-					);
-				},
-				function(err) {
-					_seneca.log.error('Neo4j ' + statementObj.operation + ' error', err);
-          			return next(err, { code: err.operation, tag: args.tag$, store: store.name, query: _cypher, error: err.error });
-				}
-			);
-		},
+    // methods required by store interface
+    name: _storeName,
 
-		/** @function save
-		 *
-		 *	@summary Saves entity to database.
-		 *
-		 *	Load first matching item based on id.
-		 *
-		 *	@since 1.0.0
-		 *
-		 *	@param 	 	{Object}	args - The arguments.
-		 *	@param 	 	{Object}	args.q - The query parameters.
-		 *	@param 	 	{Object}	args.qent - The entity to be retrieved.
-		 *	@param 	 	{middlewareCallback}	next - The next callback in the sequence.
-		 *
-		 *	@returns 	{Object}	The retrieved entity.
-		 */
-		load: function(args, next) {
-			_act({ role: _action_role, hook: 'create_load_statement', target: store.name}, args)
-			.done(
-				function(statementObj) {
-					var _cypher = statementObj.query.statement;
-					var _params = statementObj.query.parameters;
-					executeCypher(_cypher, _params)
-					.done(
-						function(results) {
-							if (results[0]) {
-								var _ent = args.qent.make$(results[0]);
-								_seneca.log(args.tag$, _cypher, _ent);
-								return next(null, _ent);
-							}
-							return next(null, []);
-						},
-						function(err) {
-							_seneca.log.error(_cypher, _params, err);
-							return next(err, { code: statementObj.operation, tag: args.tag$, store: store.name, query: _cypher, error: err });
-						}
-					);
-				},
-				function(err) {
-					_seneca.log.error('Neo4j ' + statementObj.operation + ' error', err);
-          			return next(err, { code: err.operation, tag: args.tag$, store: store.name, query: _cypher, error: err.error });
-				}
-			);
-		},
+    /** @function save
+     *
+     *  @summary Saves object to database.
+     *
+     *  Save the data as specified in the entitiy block on the arguments object.
+     *
+     *  @since 1.0.0
+     *
+     *  @param    {Object}  args - The arguments.
+     *  @param    {Object}  args.ent - The object to be saved.
+     *  @param    {middlewareCallback}  next - The next callback in the sequence.
+     *
+     *  @returns  {Object}  The saved object.
+     */
+    save: function (args, next) {
+      var _success = function (result) {
+        var _self = this
+        var _ent = _self.args.ent.make$(result[0])
+        _self.seneca.log(_self.args.tag$, _self.cypher, _ent)
+        return _self.next(null, _ent)
+      }
+      performAction.call(_seneca, 'create_save_statement', _success, args, next)
+    },
 
-		/** @function list
-		 *
-		 *	@summary Return a list of objects based on the supplied query, if no query is supplied then return all objects of that type.
-		 *
-		 *	@since 1.0.0
-		 *
-		 *	@param 	 	{Object}	args - The arguments.
-		 *	@param 	 	{Object}	args.q - The query parameters.
-		 *	@param 	 	{Object}	args.qent - The entity to be retrieved.
-		 *	@param 	 	{middlewareCallback}	next - The next callback in the sequence.
-		 *
-		 *	@returns 	{Object}	The list of entities.
-		 */
-		list: function(args, next) {
-			var _count = args.q.count$ || false;
-			var _exists = args.q.exists$ || false;
-			if (_exists) {
-				_count = true;
-			}
-			_act({ role: _action_role, hook: 'create_list_statement', target: store.name}, args)
-			.done(
-				function(statementObj) {
-					var _cypher = statementObj.query.statement;
-					var _params = statementObj.query.parameters;
-					executeCypher(_cypher, _params)
-					.done(
-						function(results) {
-							if (_count) {
-								return next(null, results);
-							}
-							if (_exists) {
-								return next(null, (results > 0));
-							}
-							var _list = [];
-							results.forEach(function(result) {
-								_list.push(args.qent.make$(result));
-							});
-							_seneca.log(args.tag$, statementObj.operation, null);
-							return next(null, _list);
-						},
-						function(err) {
-							_seneca.log.error(_cypher, _params, err);
-							return next(err, { code: statementObj.operation, tag: args.tag$, store: store.name, query: _cypher, error: err });
-						}
-					);
-				},
-				function(err) {
-					_seneca.log.error('Neo4j ' + statementObj.operation + ' error', err);
-          			return next(err, { code: err.operation, tag: args.tag$, store: store.name, query: _cypher, error: err.error });
-				}
-			);
-		},
+    /** @function load
+     *
+     *  @summary Loads a single object from the database.
+     *
+     *  Load first object matching query based on id.
+     *
+     *  @since 1.0.0
+     *
+     *  @param    {Object}  args - The arguments.
+     *  @param    {Object}  args.q - The query parameters.
+     *  @param    {Object}  args.qent - The object to be retrieved.
+     *  @param    {middlewareCallback}  next - The next callback in the sequence.
+     *
+     *  @returns  {Object}  The retrieved object.
+     */
+    load: function (args, next) {
+      var _success = function (results) {
+        var _self = this
+        if (results[0]) {
+          var _ent = _self.args.qent.make$(results[0])
+          _self.seneca.log(_self.args.tag$, _self.cypher, _ent)
+          return _self.next(null, _ent)
+        }
+        return _self.next(null, [])
+      }
+      performAction.call(_seneca, 'create_save_statement', _success, args, next)
+    },
 
-		/** @function remove
-		 *
-		 *	@summary Delete an object based on the supplied query.
-		 *
-		 *	@since 1.0.0
-		 *
-		 *	@param 	 	{Object}	args - The arguments.
-		 *	@param 	 	{Object}	args.q - The query parameters.
-		 *	@param 	 	{Object}	args.qent - The entity to be retrieved.
-		 *	@param 	 	{middlewareCallback}	next - The next callback in the sequence.
-		 *
-		 *	@returns 	{Object}	The list of entities.
-		 */
-		remove: function(args, next) {
-			var _fetch_single_row = function(args) {
-				var _deferred = Q.defer();
-				var _q = args.q;
-				// all$: if true, all matching entities are deleted; if false only the first entry in the result set; default: false
-				// load$: if true, the first matching entry (only, and if any) is the response data; if false, there is no response data; default: false
-				if ((_q.load$) || (!_q.all$)) {
-					store.load(args, function(err, row) {
-						if (err) {
-							return _deferred.reject(err);
-						}
-						if (!row) {
-							return _deferred.resolve(-5);
-						}
-						if (_q.load$) {
-							args.row = row;
-						}
-						// if we're not loading all then we must delete the first match we get back. Since this will be the full object (including id) we'll only match that one
-						args.q = GraphStore.makeentp(row);
-						return _deferred.resolve();
-					});
-				}
-				else {
-					delete _q.all$;
-					_deferred.resolve();
-				}
-				return _deferred.promise;
-			}
+    /** @function list
+     *
+     *  @summary Return a list of objects based on the supplied query, if no query is supplied then return all objects of that type.
+     *
+     *  @since 1.0.0
+     *
+     *  @param    {Object}  args - The arguments.
+     *  @param    {Object}  args.q - The query parameters.
+     *  @param    {Object}  args.qent - The object to be retrieved.
+     *  @param    {middlewareCallback}  next - The next callback in the sequence.
+     *
+     *  @returns  {Object}  The list of objects.
+     */
+    list: function (args, next) {
+      var _success = function (results) {
+        var _self = this
+        if (_self.args.q.count$) {
+          return _self.next(null, results)
+        }
+        if (_self.args.q.exists$) {
+          return _self.next(null, (results > 0))
+        }
+        var _list = []
+        results.forEach(function (result) {
+          _list.push(_self.args.qent.make$(result))
+        })
+        _self.seneca.log(_self.args.tag$, _self.cypher, null)
+        return _self.next(null, _list)
+      }
+      performAction.call(_seneca, 'create_list_statement', _success, args, next)
+    },
 
-			_fetch_single_row(args)
-			.then(function(res) {
-				if (res == -5) {
-					return next();
-				}
-				return _act({ role: _action_role, hook: 'create_remove_statement', target: store.name}, args);
-			})
-			.done(
-				function(statementObj) {
-					var _cypher = statementObj.query.statement;
-					var _params = statementObj.query.parameters;
-					executeCypher(_cypher, _params)
-					.done(
-						function(results) {
-							_seneca.log(args.tag$, statementObj.operation, null);
-							var _result = args.row || null;
-							return next(null, _result);
-						},
-						function(err) {
-							_seneca.log.error(_cypher, _params, err);
-							return next(err, { code: statementObj.operation, tag: args.tag$, store: store.name, query: _cypher, error: err });
-						}
-					);
-				},
-				function(err) {
-					_seneca.log.error('Neo4j ' + statementObj.operation + ' error', err);
-          			return next(err, { code: err.operation, tag: args.tag$, store: store.name, query: _cypher, error: err.error });
-				}
-			);
-		},
+    /** @function remove
+     *
+     *  @summary Delete an object based on the supplied query.
+     *
+     *  @since 1.0.0
+     *
+     *  @param    {Object}  args - The arguments.
+     *  @param    {Object}  args.q - The query parameters.
+     *  @param    {Object}  args.qent - The entity to be removed.
+     *  @param    {middlewareCallback}  next - The next callback in the sequence.
+     *
+     *  @returns  {Object}  The deleted object if query contains load$, null otherwise.
+     */
+    remove: function (args, next) {
+      var _fetch_single_row = function (args) {
+        var _deferred = Q.defer()
+        var _q = args.q
+        // all$: if true, all matching entities are deleted; if false only the first entry in the result set; default: false
+        // load$: if true, the first matching entry (only, and if any) is the response data; if false, there is no response data; default: false
+        if ((_q.load$) || (!_q.all$)) {
+          store.load(args, function (err, row) {
+            if (err) {
+              return _deferred.reject(err)
+            }
+            if (!row) {
+              return _deferred.resolve(-5)
+            }
+            if (_q.load$) {
+              args.row = row
+            }
+            // if we're not loading all then we must delete the first match we get back. Since this will be the full object (including id) we'll only match that one
+            args.q = GraphStore.makeentp(row)
+            return _deferred.resolve()
+          })
+        }
+        else {
+          delete _q.all$
+          _deferred.resolve()
+        }
+        return _deferred.promise
+      }
 
-		close: function(args, next) {
-			// do nothing as we're talking to Neo4j over http - there's no connection to open or close
-		},
+      _fetch_single_row(args)
+      .then(function (res) {
+        if (res === -5) {
+          return next()
+        }
+        return _act({ role: _actionRole, hook: 'create_remove_statement', target: store.name }, args)
+      })
+      .done(
+        function (statementObj) {
+          var _cypher = statementObj.query.statement
+          var _params = statementObj.query.parameters
+          executeCypher(_cypher, _params)
+          .done(
+            function (results) {
+              _seneca.log(args.tag$, statementObj.operation, null)
+              var _result = args.row || null
+              return next(null, _result)
+            },
+            function (err) {
+              _seneca.log.error(_cypher, _params, err)
+              return next(err, { code: statementObj.operation, tag: args.tag$, store: store.name, query: _cypher, error: err })
+            }
+          )
+        },
+        function (err) {
+          _seneca.log.error(_actionRole + ' remove error', err)
+          return next(err, { code: err.operation, tag: args.tag$, store: store.name, error: err.error })
+        }
+      )
+    },
 
-		native: function(args, next) {
-			// TODO: Implement this as necessary
-		}
-	}
+    close: function (args, next) {
+      // do nothing as we're talking to Neo4j over http - there's no connection to open or close
+    },
 
-	/**
-	 * Initialization
-	 */
-	var _meta = _seneca.store.init(_seneca, _opts, store);
-	_internals.desc = _meta.desc;
+    native: function (args, next) {
+      next(null, _opts)
+    },
 
-	_seneca.add({ init: store.name, tag: _meta.tag }, function(args, next) {
-		return next();
-	});
+    /** @function saveRelationship
+     *
+     *  @summary Creates a unique relationship between the objects.
+     *
+     *  The 'from' object matches the id in the supplied qent and the 'to' object(s) match the query parameters.
+     *  The relationship details are contained in the 'relationship$' object in the query.
+     *
+     *  @since 1.0.0
+     *
+     *  @param    {Object}  args - The arguments.
+     *  @param    {Object}  args.q - The query parameters.
+     *  @param    {Object}  args.qent - The 'from' object.
+     *  @param    {middlewareCallback}  next - The next callback in the sequence.
+     *
+     *  @returns  {Object}  The list of entities.
+     */
+    saveRelationship: function (args, next) {
+      var _success = function (result) {
+        var _self = this
+        var _ent = _self.args.ent.make$(result[0])
+        _self.seneca.log(_self.args.tag$, _self.cypher, _ent)
+        return _self.next(null, _ent)
+      }
+      performAction.call(_seneca, 'create_save_relationship_statement', _success, args, next)
+    },
 
-	_seneca.add({ role: _action_role, hook: 'create_load_statement'}, function(args, next) {
-		var _statement = StatementBuilder.loadStatement(args.qent, args.q);		
-		return next(null, { query: _statement, operation: 'load' });
-	});
+    /** @function updateRelationship
+     *
+     *  @summary Updates a relationship between objects.
+     *
+     *  The 'from' object matches the id in the supplied qent and the 'to' object(s) match the query parameters.
+     *  The new relationship details are contained in the 'relationship$' object in the query.
+     *
+     *  @since 1.0.0
+     *
+     *  @param    {Object}  args - The arguments.
+     *  @param    {Object}  args.q - The query parameters.
+     *  @param    {Object}  args.qent - The 'from' object.
+     *  @param    {middlewareCallback}  next - The next callback in the sequence.
+     *
+     *  @returns  {Object}  The list of entities.
+     */
+    updateRelationship: function (args, next) {
+      var _success = function (result) {
+        var _self = this
+        _self.seneca.log(_self.args.tag$, _self.cypher, null)
+        return _self.next(null, [])
+      }
+      performAction.call(_seneca, 'create_update_relationship_statement', _success, args, next)
+    },
 
-	_seneca.add({ role: _action_role, hook: 'create_list_statement'}, function(args, next) {
-		var _q = args.q;
-		var _statement;
+    /** @function removeRelationship
+     *
+     *  @summary Deletes a relationship between objects.
+     *
+     *  The 'from' object matches the id in the supplied qent and the 'to' object(s) match the query parameters.
+     *  The relationship details are contained in the 'relationship$' object in the query.
+     *
+     *  @since 1.0.0
+     *
+     *  @param    {Object}  args - The arguments.
+     *  @param    {Object}  args.q - The query parameters.
+     *  @param    {Object}  args.qent - The 'from' object.
+     *  @param    {middlewareCallback}  next - The next callback in the sequence.
+     *
+     *  @returns  {Object}  The list of entities.
+     */
+    removeRelationship: function (args, next) {
+      var _success = function (result) {
+        var _self = this
+        _self.seneca.log(_self.args.tag$, _self.cypher, null)
+        return _self.next(null, [])
+      }
+      performAction.call(_seneca, 'create_remove_relationship_statement', _success, args, next)
+    }
+  }
 
-		if (_q["relationship~"]) {
-			_statement = StatementBuilder.retrieveRelatedStatement(args.qent, _q);
-			return next(null, { query: _statement, operation: 'list related' });
-		}
-		_statement = StatementBuilder.listStatement(args.qent, _q);
-		return next(null, { query: _statement, operation: 'list' });
-	});
+  /**
+   * Initialization
+   */
+  var _meta = _seneca.store.init(_seneca, _opts, store)
+  _internals.desc = _meta.desc
 
-	_seneca.add({ role: _action_role, hook: 'create_save_statement'}, function(args, next) {
-		var _ent = args.ent;
-		// If the entity has an id field this is used as the primary key by the underlying database and the save is considered an update operation.
-		var _update = !!_ent.id;
-		var _statement;
+  var _resolve_id_query = function (qin, ent) {
+    var q
 
-		if (_ent["relationship~"]) {
-			_statement = StatementBuilder.uniqueRelationshipStatement(_ent);
-			return next(null, { query: _statement, operation: 'save relationship' })
-		}
+    if ((_.isUndefined(qin) || _.isNull(qin) || _.isFunction(qin)) && ent.id != null) {
+      q = {id: ent.id}
+    }
+    else if (_.isString(qin) || _.isNumber(qin)) {
+      q = qin === '' ? null : {id: qin}
+    }
+    else if (_.isFunction(qin)) {
+      q = null
+    }
+    else {
+      q = qin
+    }
 
-		if (_update) {
-			_statement = StatementBuilder.updateStatement(_ent);
-			return next(null, { query: _statement, operation: 'update' });
-		}
+    return q
+  }
 
-		// If the entity has an id$ field this is used as the primary key and the save is considered to be an insert operation using the specified key.
-		if (_ent.id$) {
-			_end.id = ent.id$;
-			_statement = StatementBuilder.saveStatement(_ent);
-			return next(null, { query: _statement, operation: 'save' });
-		}
-		// If the entity does not have an id field one must be generated and the save is considered an insert operation.
-		_act({ role: _action_role, hook: 'generate_id', target: args.target })
-		.done(
-			function(result) {
-				_ent.id = result.id;
-				_statement = StatementBuilder.saveStatement(_ent);
-				return next(null, { query: _statement, operation: 'save' });
-			},
-			function(err) {
-				_seneca.log.error('hook generate_id failed');
-				return next(err);
-			}
-		);
-	});
+  // extend entity by adding saveRelationship$ as a method
+  var _entityProto = Object.getPrototypeOf(_seneca.private$.entity)
+  _entityProto.saveRelationship$ = function (qin, cb) {
+    var _self = this
+    var _si = _self.private$.seneca
+    var _qent = _self
+    var _q = _resolve_id_query(qin, _self)
 
-	_seneca.add({ role: _action_role, hook: 'create_remove_statement'}, function(args, next) {
-		var _statement = StatementBuilder.removeStatement(args.qent, args.q);
-		return next(null, { query: _statement, operation: 'remove' });
-	});
+    cb = (_.isFunction(qin) ? qin : cb) || _.noop
 
-	_seneca.add({ role: _action_role, hook: 'generate_id', target: store.name}, function(args, next) {
-		return next(null, { id: Uuid() });
-	});
+    // empty query or no relationship gives empty result
+    if ((_q == null) || (_q['relationship$'] == null)) {
+      return cb()
+    }
 
-	return { name: store.name, tag: _meta.tag}
+    _si.act(_self.private$.entargs({ qent: _qent, q: _q, cmd: 'saveRelationship' }), cb)
+
+    return _self
+  }
+
+  // extend entity by adding updateRelationship$ as a method
+  _entityProto.updateRelationship$ = function (qin, cb) {
+    var _self = this
+    var _si = _self.private$.seneca
+    var _qent = _self
+    var _q = _resolve_id_query(qin, _self)
+
+    cb = (_.isFunction(qin) ? qin : cb) || _.noop
+
+    // empty query or no relationship gives empty result
+    if ((_q == null) || (_q['relationship$'] == null)) {
+      return cb()
+    }
+
+    _si.act(_self.private$.entargs({ qent: _qent, q: _q, cmd: 'updateRelationship' }), cb)
+
+    return _self
+  }
+
+  // extend entity by adding deleteRelationship$ as a method
+  _entityProto.deleteRelationship$ = function (qin, cb) {
+    var _self = this
+    var _si = _self.private$.seneca
+    var _qent = _self
+    var _q = _resolve_id_query(qin, _self)
+
+    cb = (_.isFunction(qin) ? qin : cb) || _.noop
+
+    // empty query or no relationship gives empty result
+    if ((_q == null) || (_q['relationship$'] == null)) {
+      return cb()
+    }
+
+    _si.act(_self.private$.entargs({ qent: _qent, q: _q, cmd: 'deleteRelationship' }), cb)
+
+    return _self
+  }
+
+  _seneca.add({ init: store.name, tag: _meta.tag }, function (args, next) {
+    return next()
+  })
+
+  _seneca.add({ role: _actionRole, hook: 'create_load_statement' }, function (args, next) {
+    var _statement = StatementBuilder.loadStatement(args.qent, args.q)
+    return next(null, { query: _statement, operation: 'load' })
+  })
+
+  _seneca.add({ role: _actionRole, hook: 'create_list_statement' }, function (args, next) {
+    var _q = args.q
+    var _statement
+
+    if (_q['relationship$']) {
+      _statement = StatementBuilder.retrieveRelatedStatement(args.qent, _q)
+      return next(null, { query: _statement, operation: 'list related' })
+    }
+    _statement = StatementBuilder.listStatement(args.qent, _q)
+    return next(null, { query: _statement, operation: 'list' })
+  })
+
+  _seneca.add({ role: _actionRole, hook: 'create_save_statement' }, function (args, next) {
+    var _ent = args.ent
+    // If the entity has an id field this is used as the primary key by the underlying database and the save is considered an update operation.
+    var _update = !!_ent.id
+    var _statement
+
+    if (_update) {
+      _statement = StatementBuilder.updateStatement(_ent)
+      return next(null, { query: _statement, operation: 'update' })
+    }
+
+    // If the entity has an id$ field this is used as the primary key and the save is considered to be an insert operation using the specified key.
+    if (_ent.id$) {
+      _ent.id = _ent.id$
+      _statement = StatementBuilder.saveStatement(_ent)
+      return next(null, { query: _statement, operation: 'save' })
+    }
+    // If the entity does not have an id field one must be generated and the save is considered an insert operation.
+    _act({ role: _actionRole, hook: 'generate_id', target: args.target })
+    .done(
+      function (result) {
+        _ent.id = result.id
+        _statement = StatementBuilder.saveStatement(_ent)
+        return next(null, { query: _statement, operation: 'save' })
+      },
+      function (err) {
+        _seneca.log.error('hook generate_id failed')
+        return next(err)
+      }
+    )
+  })
+
+  _seneca.add({ role: _actionRole, hook: 'create_remove_statement' }, function (args, next) {
+    var _statement = StatementBuilder.removeStatement(args.qent, args.q)
+    return next(null, { query: _statement, operation: 'remove' })
+  })
+
+  _seneca.add({ role: _actionRole, hook: 'create_save_relationship_statement' }, function (args, next) {
+    var _statement = StatementBuilder.uniqueRelationshipStatement(args.qent, args.q)
+    return next(null, { query: _statement, operation: 'save relationship' })
+  })
+
+
+  _seneca.add({ role: _actionRole, hook: 'create_update_relationship_statement' }, function (args, next) {
+    var _statement = StatementBuilder.updateRelationshipStatement(args.qent, args.q)
+    return next(null, { query: _statement, operation: 'update relationship' })
+  })
+
+  _seneca.add({ role: _actionRole, hook: 'create_remove_relationship_statement' }, function (args, next) {
+    var _statement = StatementBuilder.removeRelationshipStatement(args.qent, args.q)
+    return next(null, { query: _statement, operation: 'delete relationship' })
+  })
+
+  _seneca.add({ role: _actionRole, hook: 'generate_id', target: store.name }, function (args, next) {
+    return next(null, { id: Uuid() })
+  })
+
+  return { name: store.name, tag: _meta.tag }
 }
