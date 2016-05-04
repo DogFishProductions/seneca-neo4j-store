@@ -13,7 +13,6 @@ var Request = require('request')
 var Uuid = require('node-uuid')
 var DefaultConfig = require('./default_config.json')
 var StatementBuilder = require('./lib/statement-builder.js')
-var GraphStore = require('./lib/graph-util')
 
 var Q = require('q')
 
@@ -34,6 +33,9 @@ var _internals = {}
  */
 var executeCypher = function (cypher, params) {
   var _deferred = Q.defer()
+  if (_.isEmpty(cypher)) {
+    _deferred.resolve()
+  }
   var _json = { statements: [ { statement: cypher, parameters: params } ] }
   var _opts = _.clone(_internals.opts.conn)
   _opts.json = _json
@@ -56,7 +58,17 @@ var executeCypher = function (cypher, params) {
             _data.forEach(function (entry) {
               var _row = entry.row
               if (_row) {
-                _answer.push(_row[0])
+                if (cypher.indexOf('AS') >= 0) {
+                  var _columns = result.columns
+                  var _instance = {}
+                  for (var _index in _columns) {
+                    _instance[_columns[_index]] = _row[_index]
+                  }
+                  _answer.push(_instance)
+                }
+                else {
+                  _answer.push(_row[0])
+                }
               }
             })
           }
@@ -73,6 +85,42 @@ var executeCypher = function (cypher, params) {
   })
 
   return _deferred.promise
+}
+
+/** @function parseResult
+ *
+ *  @summary Parses the result returned from Neo4j.
+ *
+ *  Neo4j only supports storage of primitive types or arrays.  In order to store Dates or Objects we
+ *  must first convert them to strings.  This means that we have to convert them back to their original form
+ *  before returning them to the client.  That is what this function does.
+ *
+ *  @since 1.0.0
+ *
+ *  @param    {Object}  result - The object to be parsed.
+ *
+ *  @returns  {Object} The parsed object.
+ */
+var parseResult = function (result) {
+  if (_.isPlainObject(result)) {
+    _.mapValues(result, function (value, key) {
+      if (_.isString(value)) {
+        var _tests = { objPatt: /^~obj~{/, arrPatt: /^~arr~\[/ }
+        _.mapValues(_tests, function (regex) {
+          if (regex.test(value)) {
+            try {
+              result[key] = JSON.parse(value.slice(5))
+            }
+            catch (e) {
+              // do nothing, we don't care
+            }
+          }
+        })
+      }
+    })
+  }
+
+  return result
 }
 
 module.exports = function (options) {
@@ -155,7 +203,7 @@ module.exports = function (options) {
     save: function (args, next) {
       var _success = function (result) {
         var _self = this
-        var _ent = _self.args.ent.make$(result[0])
+        var _ent = _self.args.ent.make$(parseResult(result[0]))
         _self.seneca.log(_self.args.tag$, _self.cypher, _ent)
         return _self.next(null, _ent)
       }
@@ -180,14 +228,21 @@ module.exports = function (options) {
     load: function (args, next) {
       var _success = function (results) {
         var _self = this
-        if (results[0]) {
-          var _ent = _self.args.qent.make$(results[0])
+ /*       if (_.isArray(results) && (results.length > 1)) {
+          var _list = []
+          for (var _index in results) {
+            _list.push(_self.args.qent.make$(parseResult(results[_index])))
+          }
+          return _self.next(null, _list)
+        }
+        else//*/ if (results[0]) {
+          var _ent = _self.args.qent.make$(parseResult(results[0]))
           _self.seneca.log(_self.args.tag$, _self.cypher, _ent)
           return _self.next(null, _ent)
         }
-        return _self.next(null, [])
+        return _self.next(null, null)
       }
-      performAction.call(_seneca, 'create_save_statement', _success, args, next)
+      performAction.call(_seneca, 'create_load_statement', _success, args, next)
     },
 
     /** @function list
@@ -214,7 +269,7 @@ module.exports = function (options) {
         }
         var _list = []
         results.forEach(function (result) {
-          _list.push(_self.args.qent.make$(result))
+          _list.push(_self.args.qent.make$(parseResult(result)))
         })
         _self.seneca.log(_self.args.tag$, _self.cypher, null)
         return _self.next(null, _list)
@@ -239,26 +294,61 @@ module.exports = function (options) {
       var _fetch_single_row = function (args) {
         var _deferred = Q.defer()
         var _q = args.q
-        // all$: if true, all matching entities are deleted; if false only the first entry in the result set; default: false
+        // all$: if true, all matching entities are deleted and none are returned; if false only the first entry in the result set is deleted; default: false
         // load$: if true, the first matching entry (only, and if any) is the response data; if false, there is no response data; default: false
-        if ((_q.load$) || (!_q.all$)) {
+        // all$ overrides load$
+        if (!_q.all$) {
           store.load(args, function (err, row) {
             if (err) {
               return _deferred.reject(err)
             }
             if (!row) {
-              return _deferred.resolve(-5)
+              // return an id no-one would ever create
+              args.q = '~$$$$$$$$~'
+              return _deferred.resolve()
             }
             if (_q.load$) {
               args.row = row
             }
             // if we're not loading all then we must delete the first match we get back. Since this will be the full object (including id) we'll only match that one
-            args.q = GraphStore.makeentp(row)
+            var _ids = []
+            try {
+              _ids.push(row.id)
+            }
+            catch (e) {
+              // do nothing, we don't care
+            }
+            args.q = _ids
+            return _deferred.resolve()
+          })
+        }
+        else if ((_q.sort$) || (_q.skip$) || (_q.limit$)) {
+          store.list(args, function (err, results) {
+            if (err) {
+              return _deferred.reject(err)
+            }
+            // if we're not loading all then we must delete the first match we get back. Since this will be the full object (including id) we'll only match that one
+            var _ids = []
+            if (!_.isArray(results)) {
+              results = [results]
+            }
+            // load$: if true, the first matching entry (only, and if any) is the response data; if false, there is no response data; default: false
+            if (_q.load$) {
+              args.row = results[0]
+            }
+            for (var _index in results) {
+              try {
+                _ids.push(results[_index].id)
+              }
+              catch (e) {
+                // do nothing, we don't care
+              }
+            }
+            args.q = _ids
             return _deferred.resolve()
           })
         }
         else {
-          delete _q.all$
           _deferred.resolve()
         }
         return _deferred.promise
@@ -266,9 +356,6 @@ module.exports = function (options) {
 
       _fetch_single_row(args)
       .then(function (res) {
-        if (res === -5) {
-          return next()
-        }
         return _act({ role: _actionRole, hook: 'create_remove_statement', target: store.name }, args)
       })
       .done(
@@ -322,7 +409,7 @@ module.exports = function (options) {
     saveRelationship: function (args, next) {
       var _success = function (result) {
         var _self = this
-        var _ent = _self.args.ent.make$(result[0])
+        var _ent = _self.args.ent.make$(parseResult(result[0]))
         _self.seneca.log(_self.args.tag$, _self.cypher, _ent)
         return _self.next(null, _ent)
       }
@@ -487,7 +574,14 @@ module.exports = function (options) {
   _seneca.add({ role: _actionRole, hook: 'create_save_statement' }, function (args, next) {
     var _ent = args.ent
     // If the entity has an id field this is used as the primary key by the underlying database and the save is considered an update operation.
-    var _update = !!_ent.id
+    var _shouldMerge = true
+    if (options.merge !== false && _ent.merge$ === false) {
+      _shouldMerge = false
+    }
+    if (options.merge === false && _ent.merge$ !== true) {
+      _shouldMerge = false
+    }
+    var _update = (!!_ent.id && _shouldMerge)
     var _statement
 
     if (_update) {
@@ -501,19 +595,26 @@ module.exports = function (options) {
       _statement = StatementBuilder.saveStatement(_ent)
       return next(null, { query: _statement, operation: 'save' })
     }
+
     // If the entity does not have an id field one must be generated and the save is considered an insert operation.
-    _act({ role: _actionRole, hook: 'generate_id', target: args.target })
-    .done(
-      function (result) {
-        _ent.id = result.id
-        _statement = StatementBuilder.saveStatement(_ent)
-        return next(null, { query: _statement, operation: 'save' })
-      },
-      function (err) {
-        _seneca.log.error('hook generate_id failed')
-        return next(err)
-      }
-    )
+    if (!_ent.id) {
+      _act({ role: _actionRole, hook: 'generate_id', target: args.target })
+      .done(
+        function (result) {
+          _ent.id = result.id
+          _statement = StatementBuilder.saveStatement(_ent)
+          return next(null, { query: _statement, operation: 'save' })
+        },
+        function (err) {
+          _seneca.log.error('hook generate_id failed')
+          return next(err)
+        }
+      )
+    }
+    else {
+      _statement = StatementBuilder.saveStatement(_ent)
+      return next(null, { query: _statement, operation: 'save' })
+    }
   })
 
   _seneca.add({ role: _actionRole, hook: 'create_remove_statement' }, function (args, next) {

@@ -48,6 +48,11 @@ describe('Neo4J suite tests ', function () {
     script: lab
   })
 
+  Shared.extended({
+    seneca: si,
+    script: lab
+  })
+
 /*
   Extra.extendTest({
     seneca: si,

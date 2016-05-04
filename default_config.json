@@ -1,3 +1,4 @@
 {
-	"map": { "-/neo4j/-":  [ "save", "load", "list", "remove", "saveRelationship", "updateRelationship", "removeRelationship" ] }
+	"map": { "-/neo4j/-":  [ "save", "load", "list", "remove", "native", "saveRelationship", "updateRelationship", "removeRelationship" ] },
+	"merge": true
 }
