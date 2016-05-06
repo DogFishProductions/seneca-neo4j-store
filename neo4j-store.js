@@ -20,7 +20,7 @@ var _storeName = 'neo4j-store'
 var _actionRole = 'neo4j'
 var _internals = {}
 
-/** @function executeCypher
+/** @function _executeCypher
  *
  *  @summary Runs a query on the graphstore and returns the result.
  *
@@ -31,7 +31,7 @@ var _internals = {}
  *
  *  @returns  {Promise} The promise of a result.
  */
-var executeCypher = function (cypher, params) {
+var _executeCypher = function (cypher, params) {
   var _deferred = Q.defer()
   if (_.isEmpty(cypher)) {
     _deferred.resolve()
@@ -58,7 +58,7 @@ var executeCypher = function (cypher, params) {
             _data.forEach(function (entry) {
               var _row = entry.row
               if (_row) {
-                if (cypher.indexOf('AS') >= 0) {
+                if (cypher.indexOf(' AS ') >= 0) {
                   var _columns = result.columns
                   var _instance = {}
                   for (var _index in _columns) {
@@ -87,7 +87,7 @@ var executeCypher = function (cypher, params) {
   return _deferred.promise
 }
 
-/** @function parseResult
+/** @function _parseResult
  *
  *  @summary Parses the result returned from Neo4j.
  *
@@ -101,7 +101,7 @@ var executeCypher = function (cypher, params) {
  *
  *  @returns  {Object} The parsed object.
  */
-var parseResult = function (result) {
+var _parseResult = function (result) {
   if (_.isPlainObject(result)) {
     _.mapValues(result, function (value, key) {
       if (_.isString(value)) {
@@ -134,7 +134,7 @@ module.exports = function (options) {
 
   var _act = Q.nbind(_seneca.act, _seneca)
 
-  /** @function performAction
+  /** @function _performAction
    *
    *  @summary Generates a query and passes it to the graphstore.
    *
@@ -149,7 +149,7 @@ module.exports = function (options) {
    *  @param    {Object}  args - The original query arguments.
    *  @param    {middlewareCallback}  next - The next callback in the sequence.
    */
-  var performAction = function (hook, success, args, next) {
+  var _performAction = function (hook, success, args, next) {
     var _self = this
     _act({ role: _actionRole, hook: hook, target: store.name }, args)
     .done(
@@ -162,7 +162,7 @@ module.exports = function (options) {
           cypher: _cypher,
           seneca: _self
         }
-        executeCypher(_cypher, _params)
+        _executeCypher(_cypher, _params)
         .done(
           function (result) {
             success.call(_context, result)
@@ -203,11 +203,11 @@ module.exports = function (options) {
     save: function (args, next) {
       var _success = function (result) {
         var _self = this
-        var _ent = _self.args.ent.make$(parseResult(result[0]))
+        var _ent = _self.args.ent.make$(_parseResult(result[0]))
         _self.seneca.log(_self.args.tag$, _self.cypher, _ent)
         return _self.next(null, _ent)
       }
-      performAction.call(_seneca, 'create_save_statement', _success, args, next)
+      _performAction.call(_seneca, 'create_save_statement', _success, args, next)
     },
 
     /** @function load
@@ -228,21 +228,14 @@ module.exports = function (options) {
     load: function (args, next) {
       var _success = function (results) {
         var _self = this
- /*       if (_.isArray(results) && (results.length > 1)) {
-          var _list = []
-          for (var _index in results) {
-            _list.push(_self.args.qent.make$(parseResult(results[_index])))
-          }
-          return _self.next(null, _list)
-        }
-        else//*/ if (results[0]) {
-          var _ent = _self.args.qent.make$(parseResult(results[0]))
+        if (results[0]) {
+          var _ent = _self.args.qent.make$(_parseResult(results[0]))
           _self.seneca.log(_self.args.tag$, _self.cypher, _ent)
           return _self.next(null, _ent)
         }
         return _self.next(null, null)
       }
-      performAction.call(_seneca, 'create_load_statement', _success, args, next)
+      _performAction.call(_seneca, 'create_load_statement', _success, args, next)
     },
 
     /** @function list
@@ -269,12 +262,12 @@ module.exports = function (options) {
         }
         var _list = []
         results.forEach(function (result) {
-          _list.push(_self.args.qent.make$(parseResult(result)))
+          _list.push(_self.args.qent.make$(_parseResult(result)))
         })
         _self.seneca.log(_self.args.tag$, _self.cypher, null)
         return _self.next(null, _list)
       }
-      performAction.call(_seneca, 'create_list_statement', _success, args, next)
+      _performAction.call(_seneca, 'create_list_statement', _success, args, next)
     },
 
     /** @function remove
@@ -362,7 +355,7 @@ module.exports = function (options) {
         function (statementObj) {
           var _cypher = statementObj.query.statement
           var _params = statementObj.query.parameters
-          executeCypher(_cypher, _params)
+          _executeCypher(_cypher, _params)
           .done(
             function (results) {
               _seneca.log(args.tag$, statementObj.operation, null)
@@ -409,11 +402,11 @@ module.exports = function (options) {
     saveRelationship: function (args, next) {
       var _success = function (result) {
         var _self = this
-        var _ent = _self.args.ent.make$(parseResult(result[0]))
+        var _ent = _self.args.ent.make$(_parseResult(result[0]))
         _self.seneca.log(_self.args.tag$, _self.cypher, _ent)
         return _self.next(null, _ent)
       }
-      performAction.call(_seneca, 'create_save_relationship_statement', _success, args, next)
+      _performAction.call(_seneca, 'create_save_relationship_statement', _success, args, next)
     },
 
     /** @function updateRelationship
@@ -438,7 +431,7 @@ module.exports = function (options) {
         _self.seneca.log(_self.args.tag$, _self.cypher, null)
         return _self.next(null, [])
       }
-      performAction.call(_seneca, 'create_update_relationship_statement', _success, args, next)
+      _performAction.call(_seneca, 'create_update_relationship_statement', _success, args, next)
     },
 
     /** @function removeRelationship
@@ -463,7 +456,7 @@ module.exports = function (options) {
         _self.seneca.log(_self.args.tag$, _self.cypher, null)
         return _self.next(null, [])
       }
-      performAction.call(_seneca, 'create_remove_relationship_statement', _success, args, next)
+      _performAction.call(_seneca, 'create_remove_relationship_statement', _success, args, next)
     }
   }
 
