@@ -5,10 +5,11 @@
 
 var Seneca = require('seneca')
 var Shared = require('seneca-store-test')
-// var Extra = require('./neo4j.ext.test.js')
+var Relationships = require('./neo4j.relationship.test.js')
 var Fs = require('fs')
 
 var Lab = require('lab')
+var _ = require('lodash')
 var lab = exports.lab = Lab.script()
 var before = lab.before
 var describe = lab.describe
@@ -27,14 +28,24 @@ var si = Seneca({
   }
 })
 
+var senecaMerge = Seneca({
+  default_plugins: {
+    'mem-store': false
+  }
+})
+
 describe('Neo4J suite tests ', function () {
   before({}, function (done) {
+    var mergeConfig = _.cloneDeep(dbConfig)
+    mergeConfig.merge = false
+    senecaMerge.use(require('../neo4j-store.js'), mergeConfig)
     si.use(require('../neo4j-store.js'), dbConfig)
     si.ready(done)
   })
-/*
+
   Shared.basictest({
     seneca: si,
+    senecaMerge: senecaMerge,
     script: lab
   })
 
@@ -47,15 +58,24 @@ describe('Neo4J suite tests ', function () {
     seneca: si,
     script: lab
   })
-//*/
+
   Shared.extended({
     seneca: si,
     script: lab
   })
 
-/*
-  Extra.extendTest({
+  Relationships.basictest({
     seneca: si,
     script: lab
-  });//*/
+  })
+
+  Relationships.sorttest({
+    seneca: si,
+    script: lab
+  })
+
+  Relationships.limitstest({
+    seneca: si,
+    script: lab
+  })
 })

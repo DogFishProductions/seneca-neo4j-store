@@ -34,7 +34,7 @@ var _internals = {}
 var _executeCypher = function (cypher, params) {
   var _deferred = Q.defer()
   if (_.isEmpty(cypher)) {
-    _deferred.resolve()
+    _deferred.resolve([])
   }
   var _json = { statements: [ { statement: cypher, parameters: params } ] }
   var _opts = _.clone(_internals.opts.conn)
@@ -201,6 +201,7 @@ module.exports = function (options) {
      *  @returns  {Object}  The saved object.
      */
     save: function (args, next) {
+      // to be called with the context of _performAction (= 'this')
       var _success = function (result) {
         var _self = this
         var _ent = _self.args.ent.make$(_parseResult(result[0]))
@@ -226,6 +227,7 @@ module.exports = function (options) {
      *  @returns  {Object}  The retrieved object.
      */
     load: function (args, next) {
+      // to be called with the context of _performAction (= 'this')
       var _success = function (results) {
         var _self = this
         if (results[0]) {
@@ -252,6 +254,7 @@ module.exports = function (options) {
      *  @returns  {Object}  The list of objects.
      */
     list: function (args, next) {
+      // to be called with the context of _performAction (= 'this')
       var _success = function (results) {
         var _self = this
         if (_self.args.q.count$) {
@@ -284,38 +287,50 @@ module.exports = function (options) {
      *  @returns  {Object}  The deleted object if query contains load$, null otherwise.
      */
     remove: function (args, next) {
-      var _fetch_single_row = function (args) {
+      var _fetch_rows_to_delete = function (args) {
         var _deferred = Q.defer()
         var _q = args.q
+        var _qualifiers = ['sort$', 'skip$', 'limit$']
         // all$: if true, all matching entities are deleted and none are returned; if false only the first entry in the result set is deleted; default: false
         // load$: if true, the first matching entry (only, and if any) is the response data; if false, there is no response data; default: false
         // all$ overrides load$
-        if (!_q.all$) {
+        if (!_q.all$ && (!_.has(_q, 'relationship$.data') || (!_q.relationship$.data.all$))) {
           store.load(args, function (err, row) {
             if (err) {
               return _deferred.reject(err)
             }
             if (!row) {
               // return an id no-one would ever create
-              args.q = '~$$$$$$$$~'
+              var _impossibleId = '~$$$$$$$$~'
+              if (_q.relationship$) {
+                _q.id = _impossibleId
+              }
+              else {
+                args.q = _impossibleId
+              }
               return _deferred.resolve()
             }
             if (_q.load$) {
               args.row = row
             }
             // if we're not loading all then we must delete the first match we get back. Since this will be the full object (including id) we'll only match that one
-            var _ids = []
-            try {
-              _ids.push(row.id)
+            if (_q.relationship$) {
+              _q.id = row.id
             }
-            catch (e) {
-              // do nothing, we don't care
+            else {
+              var _ids = []
+              try {
+                _ids.push(row.id)
+              }
+              catch (e) {
+                // do nothing, we don't care
+              }
+              args.q = _ids
             }
-            args.q = _ids
             return _deferred.resolve()
           })
         }
-        else if ((_q.sort$) || (_q.skip$) || (_q.limit$)) {
+        else if (!_.isEmpty(_.intersection(Object.keys(_q), _qualifiers)) || (_.has(_q, 'relationship$.data') && (!_.isEmpty(_.intersection(Object.keys(_q.relationship$.data), _qualifiers))))) {
           store.list(args, function (err, results) {
             if (err) {
               return _deferred.reject(err)
@@ -347,40 +362,46 @@ module.exports = function (options) {
         return _deferred.promise
       }
 
-      _fetch_single_row(args)
-      .then(function (res) {
-        return _act({ role: _actionRole, hook: 'create_remove_statement', target: store.name }, args)
-      })
+      _fetch_rows_to_delete(args)
       .done(
-        function (statementObj) {
-          var _cypher = statementObj.query.statement
-          var _params = statementObj.query.parameters
-          _executeCypher(_cypher, _params)
-          .done(
-            function (results) {
-              _seneca.log(args.tag$, statementObj.operation, null)
-              var _result = args.row || null
-              return next(null, _result)
-            },
-            function (err) {
-              _seneca.log.error(_cypher, _params, err)
-              return next(err, { code: statementObj.operation, tag: args.tag$, store: store.name, query: _cypher, error: err })
-            }
-          )
+        function (res) {
+          // to be called with the context of _performAction (= 'this')
+          var _success = function (results) {
+            var _self = this
+            _self.seneca.log(_self.args.tag$, _self.cypher, null)
+            var _result = _self.args.row || null
+            return _self.next(null, _result)
+          }
+          _performAction.call(_seneca, 'create_remove_statement', _success, args, next)
         },
         function (err) {
-          _seneca.log.error(_actionRole + ' remove error', err)
-          return next(err, { code: err.operation, tag: args.tag$, store: store.name, error: err.error })
+          _seneca.log.error('Neo4j create_remove_statement error', err)
+          return next(err, { code: err.operation, tag: args.tag$, store: store.name, error: err })
         }
       )
     },
 
     close: function (args, next) {
       // do nothing as we're talking to Neo4j over http - there's no connection to open or close
+      return next()
     },
 
     native: function (args, next) {
-      next(null, _opts)
+      // to be called with the context of _performAction (= 'this')
+      var _success = function (results) {
+        var _self = this
+        var _list = []
+        results = _.castArray(results)
+        results.forEach(function (result) {
+          _list.push(_self.seneca.make$('obj', _parseResult(result)))
+        })
+        _self.seneca.log(_self.args.tag$, _self.cypher, null)
+        return _self.next(null, _list)
+      }
+      var _action = function (args, next) {
+        _performAction.call(_seneca, 'handle_native_statement', _success, args, next)
+      }
+      next(null, { query: _action })
     },
 
     /** @function saveRelationship
@@ -400,9 +421,10 @@ module.exports = function (options) {
      *  @returns  {Object}  The list of entities.
      */
     saveRelationship: function (args, next) {
+      // to be called with the context of _performAction (= 'this')
       var _success = function (result) {
         var _self = this
-        var _ent = _self.args.ent.make$(_parseResult(result[0]))
+        var _ent = _self.seneca.make('rel').make$(_parseResult(result[0]))
         _self.seneca.log(_self.args.tag$, _self.cypher, _ent)
         return _self.next(null, _ent)
       }
@@ -426,37 +448,14 @@ module.exports = function (options) {
      *  @returns  {Object}  The list of entities.
      */
     updateRelationship: function (args, next) {
+      // to be called with the context of _performAction (= 'this')
       var _success = function (result) {
         var _self = this
-        _self.seneca.log(_self.args.tag$, _self.cypher, null)
-        return _self.next(null, [])
+        var _ent = _self.seneca.make('rel').make$(_parseResult(result[0]))
+        _self.seneca.log(_self.args.tag$, _self.cypher, _ent)
+        return _self.next(null, _ent)
       }
       _performAction.call(_seneca, 'create_update_relationship_statement', _success, args, next)
-    },
-
-    /** @function removeRelationship
-     *
-     *  @summary Deletes a relationship between objects.
-     *
-     *  The 'from' object matches the id in the supplied qent and the 'to' object(s) match the query parameters.
-     *  The relationship details are contained in the 'relationship$' object in the query.
-     *
-     *  @since 1.0.0
-     *
-     *  @param    {Object}  args - The arguments.
-     *  @param    {Object}  args.q - The query parameters.
-     *  @param    {Object}  args.qent - The 'from' object.
-     *  @param    {middlewareCallback}  next - The next callback in the sequence.
-     *
-     *  @returns  {Object}  The list of entities.
-     */
-    removeRelationship: function (args, next) {
-      var _success = function (result) {
-        var _self = this
-        _self.seneca.log(_self.args.tag$, _self.cypher, null)
-        return _self.next(null, [])
-      }
-      _performAction.call(_seneca, 'create_remove_relationship_statement', _success, args, next)
     }
   }
 
@@ -524,39 +523,51 @@ module.exports = function (options) {
     return _self
   }
 
-  // extend entity by adding deleteRelationship$ as a method
-  _entityProto.deleteRelationship$ = function (qin, cb) {
-    var _self = this
-    var _si = _self.private$.seneca
-    var _qent = _self
-    var _q = _resolve_id_query(qin, _self)
-
-    cb = (_.isFunction(qin) ? qin : cb) || _.noop
-
-    // empty query or no relationship gives empty result
-    if ((_q == null) || (_q['relationship$'] == null)) {
-      return cb()
-    }
-
-    _si.act(_self.private$.entargs({ qent: _qent, q: _q, cmd: 'deleteRelationship' }), cb)
-
-    return _self
-  }
-
   _seneca.add({ init: store.name, tag: _meta.tag }, function (args, next) {
     return next()
   })
 
   _seneca.add({ role: _actionRole, hook: 'create_load_statement' }, function (args, next) {
-    var _statement = StatementBuilder.loadStatement(args.qent, args.q)
+    // we don't want changes to q here onwards to be reflected in the calling code...
+    var _q = _.cloneDeep(args.q)
+    var _statement
+
+    if (!_q.sort$ && !(_.isArray(_q) || _.isString(_q))) {
+      try {
+        _q.sort$ = { _id: -1 }
+      }
+      catch (e) {
+        // do nothing
+      }
+    }
+    if (_q.relationship$) {
+      var _qent = args.qent
+      // should do nothing if no relationship query provided and id not present
+      if (_.isEmpty(_q.relationship$) && (_.isNull(_qent.id) || _.isUndefined(_qent.id) || _.isEmpty(_qent.id))) {
+        return next(null, { query: { statement: null, parameters: null }, operation: 'load related' })
+      }
+      _.set(_q, 'relationship$.data.limit$', 1)
+      _statement = StatementBuilder.retrieveRelatedStatement(_qent, _q)
+      return next(null, { query: _statement, operation: 'load related' })
+    }
+    _statement = StatementBuilder.loadStatement(args.qent, args.q)
     return next(null, { query: _statement, operation: 'load' })
   })
 
   _seneca.add({ role: _actionRole, hook: 'create_list_statement' }, function (args, next) {
-    var _q = args.q
+    // we don't want changes to q here onwards to be reflected in the calling code...
+    var _q = _.cloneDeep(args.q)
     var _statement
 
-    if (_q['relationship$']) {
+    if (!_q.sort$ && !(_.isArray(_q) || _.isString(_q))) {
+      try {
+        _q.sort$ = { _id: -1 }
+      }
+      catch (e) {
+        // do nothing
+      }
+    }
+    if (_q.relationship$) {
       _statement = StatementBuilder.retrieveRelatedStatement(args.qent, _q)
       return next(null, { query: _statement, operation: 'list related' })
     }
@@ -568,7 +579,7 @@ module.exports = function (options) {
     var _ent = args.ent
     // If the entity has an id field this is used as the primary key by the underlying database and the save is considered an update operation.
     var _shouldMerge = true
-    if (options.merge !== false && _ent.merge$ === false) {
+    if (options.merge !== true && _ent.merge$ === false) {
       _shouldMerge = false
     }
     if (options.merge === false && _ent.merge$ !== true) {
@@ -611,7 +622,17 @@ module.exports = function (options) {
   })
 
   _seneca.add({ role: _actionRole, hook: 'create_remove_statement' }, function (args, next) {
-    var _statement = StatementBuilder.removeStatement(args.qent, args.q)
+    var _q = args.q
+    var _statement
+
+    // we remove nodes based on id, so we don't need to provide a label (and in some cases we don't want to)
+    var _unlabelled = _seneca.make$()
+
+    if (_q.relationship$) {
+      _statement = StatementBuilder.removeRelationshipStatement(_unlabelled, args.q)
+      return next(null, { query: _statement, operation: 'remove relationship' })
+    }
+    _statement = StatementBuilder.removeStatement(_unlabelled, args.q)
     return next(null, { query: _statement, operation: 'remove' })
   })
 
@@ -620,15 +641,14 @@ module.exports = function (options) {
     return next(null, { query: _statement, operation: 'save relationship' })
   })
 
-
   _seneca.add({ role: _actionRole, hook: 'create_update_relationship_statement' }, function (args, next) {
     var _statement = StatementBuilder.updateRelationshipStatement(args.qent, args.q)
     return next(null, { query: _statement, operation: 'update relationship' })
   })
 
-  _seneca.add({ role: _actionRole, hook: 'create_remove_relationship_statement' }, function (args, next) {
-    var _statement = StatementBuilder.removeRelationshipStatement(args.qent, args.q)
-    return next(null, { query: _statement, operation: 'delete relationship' })
+  _seneca.add({ role: _actionRole, hook: 'handle_native_statement' }, function (args, next) {
+    var _statement = { statement: args.cypher, parameters: args.parameters }
+    return next(null, { query: _statement, operation: 'native' })
   })
 
   _seneca.add({ role: _actionRole, hook: 'generate_id', target: store.name }, function (args, next) {

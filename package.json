@@ -17,7 +17,7 @@
     "url": "https://github.com/redjamjar/seneca-neo4j-store.git"
   },
   "scripts": {
-    "test": "lab test/*.test.js -r console -v -L -m 10000 -t 72",
+    "test": "lab test/*.test.js -r console -v -L -m 20000 -t 72",
     "up": "docker-compose up neo4j server",
     "start": "docker-compose start neo4j server",
     "stop": "docker-compose stop neo4j server",
