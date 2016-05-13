@@ -7,7 +7,7 @@ var _ = require('lodash')
 var Lab = require('lab')
 
 var reltemplate = {
-  relatedModelName: 'bar',
+  relatedNodeLabel: 'bar',
   type: 'RELATED_TO',
   data: {
     str: 'aaa',
@@ -121,7 +121,7 @@ function basictest (settings) {
       it('should return null for non existing relationship', function (done) {
         var foo = si.make('foo', { id: 'source' })
         var rel = {
-          relatedModelName: 'bar',
+          relatedNodeLabel: 'bar',
           type: 'DOES_NOT_EXIST',
           data: {}
         }
@@ -212,7 +212,7 @@ function basictest (settings) {
 
       it('should update a relationship', function (done) {
         var startTemplate = {
-          relatedModelName: 'bar',
+          relatedNodeLabel: 'bar',
           type: 'RELATED_TO',
           data: {
             str: 'to-be-updated',
@@ -220,7 +220,7 @@ function basictest (settings) {
           }
         }
         var endTemplate = {
-          relatedModelName: 'bar',
+          relatedNodeLabel: 'bar',
           type: 'RELATED_TO',
           data: {
             str: 'updated'
@@ -248,7 +248,7 @@ function basictest (settings) {
         var foo = si.make('foo')
         foo.id = 'source'
         var rel = si.make('rel', {
-          relatedModelName: 'bar',
+          relatedNodeLabel: 'bar',
           type: 'RELATED_TO',
           data: {
             str: 'aaa'
@@ -269,7 +269,7 @@ function basictest (settings) {
         var foo = si.make('foo')
         foo.id = 'source'
         var rel = si.make('rel', {
-          relatedModelName: 'bar',
+          relatedNodeLabel: 'bar',
           type: 'RELATED_TO',
           data: {
             str: 'aaa'
@@ -290,7 +290,7 @@ function basictest (settings) {
         var foo = si.make('foo')
         foo.id = 'source'
         var rel = {
-          relatedModelName: 'bar',
+          relatedNodeLabel: 'bar',
           type: 'RELATED_TO',
           data: {
             p1: 'a',
@@ -389,7 +389,7 @@ function basictest (settings) {
         var foo = si.make('foo', { id: 'source' })
         var bam = si.make('bam', { id$: 'bam', p1: 'a' })
         var bamTemplate = {
-          relatedModelName: 'bam',
+          relatedNodeLabel: 'bam',
           type: 'RELATIONSHIP_WITH',
           data: {
             str: 'str',
@@ -411,7 +411,7 @@ function basictest (settings) {
 
       it('should list entities by relationship type and integer property', function (done) {
         var foo = si.make('foo', { id: 'source' })
-        foo.updateRelationship$({ relationship$: { relatedModelName: 'bar', type: 'RELATED_TO', data: { int: 12 } }, p1: 'v2' }, function (err, rel) {
+        foo.updateRelationship$({ relationship$: { relatedNodeLabel: 'bar', type: 'RELATED_TO', data: { int: 12 } }, p1: 'v2' }, function (err, rel) {
           Assert.isNull(err)
           foo.list$({ relationship$: { type: 'RELATED_TO', data: { int: 12 } } }, verify(done, function (res) {
             Assert.lengthOf(res, 1)
@@ -423,7 +423,7 @@ function basictest (settings) {
 
       it('should list entities by relationship type and string property', function (done) {
         var foo = si.make('foo', { id: 'source' })
-        foo.updateRelationship$({ relationship$: { relatedModelName: 'bar', type: 'RELATED_TO', data: { str: 'ccc' } }, p1: 'v2' }, function (err, rel) {
+        foo.updateRelationship$({ relationship$: { relatedNodeLabel: 'bar', type: 'RELATED_TO', data: { str: 'ccc' } }, p1: 'v2' }, function (err, rel) {
           Assert.isNull(err)
           foo.list$({ relationship$: { type: 'RELATED_TO', data: { str: 'ccc' } } }, verify(done, function (res) {
             Assert.lengthOf(res, 1)
@@ -435,7 +435,7 @@ function basictest (settings) {
 
       it('should list entities by two relationship type and properties', function (done) {
         var foo = si.make('foo', { id: 'source' })
-        foo.updateRelationship$({ relationship$: { relatedModelName: 'bar', type: 'RELATED_TO', data: { int: 12, str: 'ccc' } }, p1: 'v2' }, function (err, rel) {
+        foo.updateRelationship$({ relationship$: { relatedNodeLabel: 'bar', type: 'RELATED_TO', data: { int: 12, str: 'ccc' } }, p1: 'v2' }, function (err, rel) {
           Assert.isNull(err)
           foo.list$({ relationship$: { type: 'RELATED_TO', data: { int: 12, str: 'ccc' } } }, verify(done, function (res) {
             Assert.lengthOf(res, 1)
@@ -492,7 +492,7 @@ function basictest (settings) {
         var foo = si.make('foo', { id: 'source' })
         var bam = si.make('bam', { id$: 'bam', p1: 'a' })
         var bamTemplate = {
-          relatedModelName: 'bam',
+          relatedNodeLabel: 'bam',
           type: 'RELATIONSHIP_WITH',
           data: {
             str: 'str',
@@ -524,7 +524,7 @@ function basictest (settings) {
 
       it('should delete a relationship by type and property', function (done) {
         var foo = si.make('foo', { id: 'source' })
-        foo.updateRelationship$({ relationship$: { relatedModelName: 'bar', type: 'RELATED_TO', data: { int: 12 } }, p1: 'v2' }, function (err, rel) {
+        foo.updateRelationship$({ relationship$: { relatedNodeLabel: 'bar', type: 'RELATED_TO', data: { int: 12 } }, p1: 'v2' }, function (err, rel) {
           Assert.isNull(err)
           foo.list$({ relationship$: { type: 'RELATED_TO', data: { int: 12 } } }, function (err, res) {
             Assert.isNull(err)
@@ -544,7 +544,7 @@ function basictest (settings) {
 
       it('should delete relationships filtered by type and AND', function (done) {
         var foo = si.make('foo', { id: 'source' })
-        foo.updateRelationship$({ relationship$: { relatedModelName: 'bar', type: 'RELATED_TO', data: { int: 12 } }, p1: 'v2' }, function (err, rel) {
+        foo.updateRelationship$({ relationship$: { relatedNodeLabel: 'bar', type: 'RELATED_TO', data: { int: 12 } }, p1: 'v2' }, function (err, rel) {
           Assert.isNull(err)
           foo.list$({ relationship$: { type: 'RELATED_TO', data: { int: 12 } } }, function (err, res) {
             Assert.isNull(err)
@@ -593,7 +593,7 @@ function sorttest (settings) {
       [
         {
           relationship$: {
-            relatedModelName: 'bar',
+            relatedNodeLabel: 'bar',
             type: 'RELATIONSHIP_SORT',
             data: { r1: 'v1', r2: 'v1' }
           },
@@ -602,7 +602,7 @@ function sorttest (settings) {
         },
         {
           relationship$: {
-            relatedModelName: 'bar',
+            relatedNodeLabel: 'bar',
             type: 'RELATIONSHIP_SORT',
             data: { r1: 'v2', r2: 'v3' }
           },
@@ -611,7 +611,7 @@ function sorttest (settings) {
         },
         {
           relationship$: {
-            relatedModelName: 'bar',
+            relatedNodeLabel: 'bar',
             type: 'RELATIONSHIP_SORT',
             data: { r1: 'v3', r2: 'v2' }
           },
@@ -620,7 +620,7 @@ function sorttest (settings) {
         },
         {
           relationship$: {
-            relatedModelName: 'bar',
+            relatedNodeLabel: 'bar',
             type: 'RELATED_SORT',
             data: { r1: 'v4', r2: 'v7' }
           },
@@ -629,7 +629,7 @@ function sorttest (settings) {
         },
         {
           relationship$: {
-            relatedModelName: 'bar',
+            relatedNodeLabel: 'bar',
             type: 'RELATED_SORT',
             data: { r1: 'v4', r2: 'v7' }
           },
@@ -638,7 +638,7 @@ function sorttest (settings) {
         },
         {
           relationship$: {
-            relatedModelName: 'bar',
+            relatedNodeLabel: 'bar',
             type: 'RELATED_SORT',
             data: { r1: 'v4', r2: 'v7' }
           },
@@ -916,7 +916,7 @@ function limitstest (settings) {
       [
         {
           relationship$: {
-            relatedModelName: 'bar',
+            relatedNodeLabel: 'bar',
             type: 'RELATIONSHIP_SORT',
             data: { r1: 'v1', r2: 'v1' }
           },
@@ -925,7 +925,7 @@ function limitstest (settings) {
         },
         {
           relationship$: {
-            relatedModelName: 'bar',
+            relatedNodeLabel: 'bar',
             type: 'RELATIONSHIP_SORT',
             data: { r1: 'v2', r2: 'v3' }
           },
@@ -934,7 +934,7 @@ function limitstest (settings) {
         },
         {
           relationship$: {
-            relatedModelName: 'bar',
+            relatedNodeLabel: 'bar',
             type: 'RELATIONSHIP_SORT',
             data: { r1: 'v3', r2: 'v2' }
           },
@@ -943,7 +943,7 @@ function limitstest (settings) {
         },
         {
           relationship$: {
-            relatedModelName: 'bar',
+            relatedNodeLabel: 'bar',
             type: 'RELATED_SORT',
             data: { r1: 'v4', r2: 'v7' }
           },
@@ -952,7 +952,7 @@ function limitstest (settings) {
         },
         {
           relationship$: {
-            relatedModelName: 'bar',
+            relatedNodeLabel: 'bar',
             type: 'RELATED_SORT',
             data: { r1: 'v4', r2: 'v7' }
           },
@@ -961,7 +961,7 @@ function limitstest (settings) {
         },
         {
           relationship$: {
-            relatedModelName: 'bar',
+            relatedNodeLabel: 'bar',
             type: 'RELATED_SORT',
             data: { r1: 'v4', r2: 'v7' }
           },
@@ -1204,7 +1204,7 @@ function limitstest (settings) {
         [
           {
             relationship$: {
-              relatedModelName: 'bar',
+              relatedNodeLabel: 'bar',
               type: 'RELATIONSHIP_SORT',
               data: { r1: 'v1', r2: 'v1' }
             },
@@ -1213,7 +1213,7 @@ function limitstest (settings) {
           },
           {
             relationship$: {
-              relatedModelName: 'bar',
+              relatedNodeLabel: 'bar',
               type: 'RELATIONSHIP_SORT',
               data: { r1: 'v2', r2: 'v3' }
             },
@@ -1222,7 +1222,7 @@ function limitstest (settings) {
           },
           {
             relationship$: {
-              relatedModelName: 'bar',
+              relatedNodeLabel: 'bar',
               type: 'RELATIONSHIP_SORT',
               data: { r1: 'v3', r2: 'v2' }
             },
@@ -1231,7 +1231,7 @@ function limitstest (settings) {
           },
           {
             relationship$: {
-              relatedModelName: 'bar',
+              relatedNodeLabel: 'bar',
               type: 'RELATED_SORT',
               data: { r1: 'v4', r2: 'v7' }
             },
@@ -1240,7 +1240,7 @@ function limitstest (settings) {
           },
           {
             relationship$: {
-              relatedModelName: 'bar',
+              relatedNodeLabel: 'bar',
               type: 'RELATED_SORT',
               data: { r1: 'v4', r2: 'v7' }
             },
@@ -1249,7 +1249,7 @@ function limitstest (settings) {
           },
           {
             relationship$: {
-              relatedModelName: 'bar',
+              relatedNodeLabel: 'bar',
               type: 'RELATED_SORT',
               data: { r1: 'v4', r2: 'v7' }
             },

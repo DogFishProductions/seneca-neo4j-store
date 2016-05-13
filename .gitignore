@@ -20,7 +20,6 @@ npm-debug.log
 README.html
 
 test/dbconfig.mine.js
-neo4j-store-service.js
 
 .idea/
 .settings/

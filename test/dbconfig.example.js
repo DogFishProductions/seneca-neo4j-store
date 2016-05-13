@@ -1,7 +1,7 @@
 'use strict'
 
 module.exports = {
-  'conn': {'url': 'http://localhost:7474/db/data/transaction/commit',
+  'conn': {'url': 'http://neo4j:7474/db/data/transaction/commit',
     'auth': {
       'user': 'neo4j',
       'pass': 'neo4j'
@@ -13,5 +13,6 @@ module.exports = {
     },
     'strictSSL': false
   },
-  'map': { '-/-/-': [ 'save', 'load', 'list', 'remove', 'native', 'saveRelationship', 'updateRelationship' ] }
+  'map': { '-/-/-': [ 'save', 'load', 'list', 'remove', 'native', 'saveRelationship', 'updateRelationship' ] },
+  "merge": false
 }

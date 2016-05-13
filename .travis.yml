@@ -1,0 +1,23 @@
+sudo: required
+language: node_js
+
+env:
+  - SENECA_VER=@1.x.x
+  - SENECA_VER=@2.x.x
+
+node_js:
+  - '0.12'
+  - '0.10'
+
+cache:
+  directories:
+  - node_modules
+
+services:
+  - docker
+
+before_script:
+  - npm up
+
+after_script:
+  - npm run coverage

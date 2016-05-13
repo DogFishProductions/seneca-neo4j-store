@@ -1,17 +1,16 @@
 server:
- image: paulne/node_microservice
+ build: .
  links:
   - neo4j
  volumes:
   - $PWD/src:/home/redjam/src
-  - $PWD/tests:/home/redjam/tests
- command: bash -c "cd /home/redjam/tests && npm install && cd /home/redjam/src && npm install && nodemon -L ./neo4j-store-service.js"
+ command: bash -c "cd /home/redjam/src && npm install && npm test && npm run coverage"
 
 neo4j:
  image: neo4j:2.3.2
  ports: 
   - "7474:7474"
   - "7473:7473"
- volumes:
-  - $HOME/neo4j/data:/data
-  - $HOME/neo4j/conf:/conf
+# volumes:
+#  - $HOME/neo4j/data:/data
+#  - $HOME/neo4j/conf:/conf
