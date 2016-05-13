@@ -48,12 +48,12 @@
     "lab": "10.x.x",
     "docco": "0.7.0",
     "seneca-store-test": "^1.1.0",
-    "eslint-config-hapi": "~9.0.x",
+    "eslint-config-hapi": "~9.1.x",
     "eslint-config-seneca": "2.x.x",
     "eslint-plugin-hapi": "4.x.x",
     "eslint-plugin-standard": "1.x.x",
     "seneca": "~2.0.x",
-    "seneca-mem-store": "^0.4.0"
+    "seneca-mem-store": "^0.5.0"
   },
   "dependencies": {
     "q": "^1.4.1",
