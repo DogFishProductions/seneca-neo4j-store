@@ -14,5 +14,5 @@ module.exports = {
     'strictSSL': false
   },
   'map': { '-/-/-': [ 'save', 'load', 'list', 'remove', 'native', 'saveRelationship', 'updateRelationship' ] },
-  "merge": false
+  'merge': true
 }

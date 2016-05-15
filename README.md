@@ -132,6 +132,8 @@ Note also that, unlike other data stores, this data store does use attributes fr
 ## To run tests with Docker
 I prefer to develop my code in Docker as it means I can be certain which versions of software are being used.  It also means that I don't have to install anything other than docker on my computer.  To this end, I've included a docker-compose.yml file that creates containers for both Neo4j (using the official Docker image) and seneca-neo4j-store (using a highly insecure image I've created purely for the purposes of local testing - don't say I didn't warn you) and runs the unit tests within Docker.
 
+Note that the first time you start the Neo4j container and log into the web interface it will immediately ask you to change the password.  This new password must be updated in the test configuration otherwise the plugin will not be able to connect to the database.
+
 Build the images:
 
 ```sh

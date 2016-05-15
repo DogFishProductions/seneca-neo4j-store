@@ -465,62 +465,70 @@ module.exports = function (options) {
   var _meta = _seneca.store.init(_seneca, _opts, store)
   _internals.desc = _meta.desc
 
-  var _resolve_id_query = function (qin, ent) {
-    var q
-
-    if ((_.isUndefined(qin) || _.isNull(qin) || _.isFunction(qin)) && ent.id != null) {
-      q = {id: ent.id}
-    }
-    else if (_.isString(qin) || _.isNumber(qin)) {
-      q = qin === '' ? null : {id: qin}
-    }
-    else if (_.isFunction(qin)) {
-      q = null
-    }
-    else {
-      q = qin
-    }
-
-    return q
+  var _entityProto
+  try {
+    _entityProto = _seneca.private$.exports.Entity.prototype
   }
-
-  // extend entity by adding saveRelationship$ as a method
-  var _entityProto = Object.getPrototypeOf(_seneca.private$.entity)
-  _entityProto.saveRelationship$ = function (qin, cb) {
-    var _self = this
-    var _si = _self.private$.seneca
-    var _qent = _self
-    var _q = _resolve_id_query(qin, _self)
-
-    cb = (_.isFunction(qin) ? qin : cb) || _.noop
-
-    // empty query or no relationship gives empty result
-    if ((_q == null) || (_q['relationship$'] == null)) {
-      return cb()
-    }
-
-    _si.act(_self.private$.entargs({ qent: _qent, q: _q, cmd: 'saveRelationship' }), cb)
-
-    return _self
+  catch (e) {
+    // do nothing, entity not assigned yet....
   }
+  if (_entityProto) {
+    var _resolve_id_query = function (qin, ent) {
+      var q
 
-  // extend entity by adding updateRelationship$ as a method
-  _entityProto.updateRelationship$ = function (qin, cb) {
-    var _self = this
-    var _si = _self.private$.seneca
-    var _qent = _self
-    var _q = _resolve_id_query(qin, _self)
+      if ((_.isUndefined(qin) || _.isNull(qin) || _.isFunction(qin)) && ent.id != null) {
+        q = {id: ent.id}
+      }
+      else if (_.isString(qin) || _.isNumber(qin)) {
+        q = qin === '' ? null : {id: qin}
+      }
+      else if (_.isFunction(qin)) {
+        q = null
+      }
+      else {
+        q = qin
+      }
 
-    cb = (_.isFunction(qin) ? qin : cb) || _.noop
-
-    // empty query or no relationship gives empty result
-    if ((_q == null) || (_q['relationship$'] == null)) {
-      return cb()
+      return q
     }
 
-    _si.act(_self.private$.entargs({ qent: _qent, q: _q, cmd: 'updateRelationship' }), cb)
+    // extend entity by adding saveRelationship$ as a method
+    _entityProto.saveRelationship$ = function (qin, cb) {
+      var _self = this
+      var _si = _self.private$.seneca
+      var _qent = _self
+      var _q = _resolve_id_query(qin, _self)
 
-    return _self
+      cb = (_.isFunction(qin) ? qin : cb) || _.noop
+
+      // empty query or no relationship gives empty result
+      if ((_q == null) || (_q['relationship$'] == null)) {
+        return cb()
+      }
+
+      _si.act(_self.private$.entargs({ qent: _qent, q: _q, cmd: 'saveRelationship' }), cb)
+
+      return _self
+    }
+
+    // extend entity by adding updateRelationship$ as a method
+    _entityProto.updateRelationship$ = function (qin, cb) {
+      var _self = this
+      var _si = _self.private$.seneca
+      var _qent = _self
+      var _q = _resolve_id_query(qin, _self)
+
+      cb = (_.isFunction(qin) ? qin : cb) || _.noop
+
+      // empty query or no relationship gives empty result
+      if ((_q == null) || (_q['relationship$'] == null)) {
+        return cb()
+      }
+
+      _si.act(_self.private$.entargs({ qent: _qent, q: _q, cmd: 'updateRelationship' }), cb)
+
+      return _self
+    }
   }
 
   _seneca.add({ init: store.name, tag: _meta.tag }, function (args, next) {
@@ -559,9 +567,16 @@ module.exports = function (options) {
     var _q = _.cloneDeep(args.q)
     var _statement
 
-    if (!_q.sort$ && !(_.isArray(_q) || _.isString(_q))) {
+    if (!_q.sort$) {
+      var _newsort
+      if (!_.isArray(_q)) {
+        _newsort = { _id: -1 }
+      }
+      else {
+        _newsort = { _id: 1 }
+      }
       try {
-        _q.sort$ = { _id: -1 }
+        _q.sort$ = _newsort
       }
       catch (e) {
         // do nothing
@@ -579,12 +594,13 @@ module.exports = function (options) {
     var _ent = args.ent
     // If the entity has an id field this is used as the primary key by the underlying database and the save is considered an update operation.
     var _shouldMerge = true
-    if (options.merge !== true && _ent.merge$ === false) {
+    if (options.merge !== false && _ent.merge$ === false) {
       _shouldMerge = false
     }
     if (options.merge === false && _ent.merge$ !== true) {
       _shouldMerge = false
     }
+
     var _update = (!!_ent.id && _shouldMerge)
     var _statement
 

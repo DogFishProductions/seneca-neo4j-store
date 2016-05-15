@@ -28,11 +28,19 @@ var si = Seneca({
   }
 })
 
+if (si.version >= '2.0.0') {
+  si.use('entity')
+}
+
 var senecaMerge = Seneca({
   default_plugins: {
     'mem-store': false
   }
 })
+
+if (si.version >= '2.0.0') {
+  senecaMerge.use('entity')
+}
 
 describe('Neo4J suite tests ', function () {
   before({}, function (done) {

@@ -3,7 +3,7 @@ server:
  links:
   - neo4j
  volumes:
-  - $PWD/src:/home/redjam/src
+  - $PWD:/home/redjam/src
  command: bash -c "cd /home/redjam/src && npm install && npm test && npm run coverage"
 
 neo4j:
@@ -11,6 +11,3 @@ neo4j:
  ports: 
   - "7474:7474"
   - "7473:7473"
-# volumes:
-#  - $HOME/neo4j/data:/data
-#  - $HOME/neo4j/conf:/conf

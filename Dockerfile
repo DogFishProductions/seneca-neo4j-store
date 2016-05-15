@@ -1,6 +1,6 @@
 # Version: 0.0.1
 
-FROM node:0.12.7
+FROM node:4
 
 MAINTAINER Paul Nebel "paul.nebel@redjamjar.net"
 ENV REFRESHED_AT 2016_05_13
@@ -25,6 +25,8 @@ ENV HOME /home/redjam
 USER redjam
 
 RUN npm install -g npm \
+	&& npm install -g nodemon \
+	&& npm config set python /usr/bin/python \
     && npm cache clear
 
 RUN mkdir /home/redjam/src
