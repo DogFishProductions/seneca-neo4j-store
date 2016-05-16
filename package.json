@@ -48,6 +48,8 @@
     "lab": "10.x.x",
     "docco": "0.7.0",
     "coveralls": "^2.11.6",
+    "async": "^1.4.0",
+    "chai": "^3.3.0",
     "seneca-store-test": "^1.1.0",
     "eslint-config-hapi": "~9.1.x",
     "eslint-config-seneca": "2.x.x",
