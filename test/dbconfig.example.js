@@ -4,7 +4,7 @@ module.exports = {
   'conn': {'url': 'http://neo4j:7474/db/data/transaction/commit',
     'auth': {
       'user': 'neo4j',
-      'pass': 'neo4j'
+      'pass': 'seneca_test'
     },
     'headers': {
       'accept': 'application/json; charset=UTF-8',

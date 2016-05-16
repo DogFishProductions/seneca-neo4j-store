@@ -1,4 +1,4 @@
-server:
+store:
  build: .
  links:
   - neo4j
@@ -11,3 +11,5 @@ neo4j:
  ports: 
   - "7474:7474"
   - "7473:7473"
+ environment:
+  - NEO4J_AUTH=neo4j/seneca_test

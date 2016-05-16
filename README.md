@@ -1,5 +1,7 @@
 # seneca-neo4j-store
 
+[![Build Status][travis-badge]][travis-url]
+[![Coverage Status][coveralls-badge]][coveralls-url]
 [![Dependency Status][david-badge]][david-url]
 
 [![js-standard-style][standard-badge]][standard-style]
@@ -38,9 +40,9 @@ seneca.use('neo4j-store', {
     'headers': {
       'accept': 'application/json; charset=UTF-8',
       'content-type': 'application/json',
-      'x-stream': 'true'
+      'x-stream': true
     },
-    'strictSSL': false
+    'strictSSL': true
   },
   'map': { '-/-/-': [ 'save', 'load', 'list', 'remove', 'native', 'saveRelationship', 'updateRelationship' ] },
   "merge": false
@@ -130,40 +132,37 @@ Note: you can use `sort$`, `limit$`, `skip$` and `fields$` together in both the 
 Note also that, unlike other data stores, this data store does use attributes from the entity to filter queries but only in the context of the `relationship$` object.
 
 ## To run tests with Docker
-I prefer to develop my code in Docker as it means I can be certain which versions of software are being used.  It also means that I don't have to install anything other than docker on my computer.  To this end, I've included a docker-compose.yml file that creates containers for both Neo4j (using the official Docker image) and seneca-neo4j-store (using a highly insecure image I've created purely for the purposes of local testing - don't say I didn't warn you) and runs the unit tests within Docker.
-
-Note that the first time you start the Neo4j container and log into the web interface it will immediately ask you to change the password.  This new password must be updated in the test configuration otherwise the plugin will not be able to connect to the database.
+I prefer to develop my code in Docker as it means I can be certain which versions of software are being used.  It also means that I don't have to install anything other than docker on my computer.  To this end, I've included a docker-compose.yml file that creates containers for both Neo4j (using the official Docker image) and seneca-neo4j-store (using a highly insecure image I've created purely for the purposes of local testing - don't say I didn't warn you) and runs the unit tests within Docker. Start the neo4j container first to ensure it is running before you run tests.
 
 Build the images:
-
 ```sh
-npm run build
+docker-compose up neo4j
+docker-compose up store
 ```
 
-Start the containers and run the tests:
+Start the containers and run the tests (start the neo4j container first to ensure it is running before you run tests):
 ```sh
-npm run start
+docker-compose start neo4j
+docker-compose start store
 ```
 
 Stop the containers:
 ```sh
-npm run stop
+docker-compose stop
 ```
 
 ## License
 Copyright (c) 2016, Paul Nebel.
 Licensed under [MIT][].
 
-[npm-badge]: https://img.shields.io/npm/v/seneca-mysql-store.svg
-[npm-url]: https://npmjs.com/package/seneca-mysql-store
-[travis-badge]: https://travis-ci.org/senecajs/seneca-mysql-store.svg
-[travis-url]: https://travis-ci.org/senecajs/seneca-mysql-store
-[coverage-badge]: https://coveralls.io/repos/senecajs/seneca-mysql-store/badge.svg?branch=master&service=github
-[coverage-url]: https://coveralls.io/github/senecajs/seneca-mysql-store?branch=master
+[npm-badge]: https://img.shields.io/npm/v/seneca-neo4j-store.svg
+[npm-url]: https://npmjs.com/package/seneca-neo4j-store
+[travis-badge]: https://travis-ci.org/senecajs/seneca-neo4j-store.svg
+[travis-url]: https://travis-ci.org/senecajs/seneca-neo4j-store
+[coverage-badge]: https://coveralls.io/repos/senecajs/seneca-neo4j-store/badge.svg?branch=master&service=github
+[coverage-url]: https://coveralls.io/github/senecajs/seneca-neo4j-store?branch=master
 [david-badge]: https://david-dm.org/redjamjar/seneca-neo4j-store.svg
 [david-url]: https://david-dm.org/redjamjar/seneca-neo4j-store
-[gitter-badge]: https://badges.gitter.im/Join%20Chat.svg
-[gitter-url]: https://gitter.im/senecajs/seneca
 [standard-badge]: https://raw.githubusercontent.com/feross/standard/master/badge.png
 [standard-style]: https://github.com/feross/standard
 

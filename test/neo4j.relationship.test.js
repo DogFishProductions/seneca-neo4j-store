@@ -580,12 +580,18 @@ function sorttest (settings) {
     before(createEntities(si, 'foo', [
       { p1: 'v1', p2: 'v1' }
     ]))
+    // make sure this is not in alphabetical order,
+    // otherwise insertion order will be similar to the order we use for tests
+    // possibly leading to false positives.
+    // Also, create separately to ensure they are created in the correct order, otherwise
+    // unit tests will fail.
     before(createEntities(si, 'bar', [
-      { p1: 'v1', p2: 'v1' },
-      // make sure this is not in alphabetical order,
-      // otherwise insertion order will be similar to the order we use for tests
-      // possibly leading to false positives
-      { p1: 'v2', p2: 'v3' },
+      { p1: 'v1', p2: 'v1' }
+    ]))
+    before(createEntities(si, 'bar', [
+      { p1: 'v2', p2: 'v3' }
+    ]))
+    before(createEntities(si, 'bar', [
       { p1: 'v3', p2: 'v2' }
     ]))
     before(createRelationships(si, 'foo',
@@ -903,12 +909,18 @@ function limitstest (settings) {
     before(createEntities(si, 'foo', [
       { p1: 'v1', p2: 'v1' }
     ]))
+    // make sure this is not in alphabetical order,
+    // otherwise insertion order will be similar to the order we use for tests
+    // possibly leading to false positives.
+    // Also, create separately to ensure they are created in the correct order, otherwise
+    // unit tests will fail.
     before(createEntities(si, 'bar', [
-      { p1: 'v1', p2: 'v1' },
-      // make sure this is not in alphabetical order,
-      // otherwise insertion order will be similar to the order we use for tests
-      // possibly leading to false positives
-      { p1: 'v2', p2: 'v3' },
+      { p1: 'v1', p2: 'v1' }
+    ]))
+    before(createEntities(si, 'bar', [
+      { p1: 'v2', p2: 'v3' }
+    ]))
+    before(createEntities(si, 'bar', [
       { p1: 'v3', p2: 'v2' }
     ]))
     before(createRelationships(si, 'foo',
@@ -1191,12 +1203,18 @@ function limitstest (settings) {
       beforeEach(createEntities(si, 'foo', [
         { p1: 'v1', p2: 'v1' }
       ]))
+      // make sure this is not in alphabetical order,
+      // otherwise insertion order will be similar to the order we use for tests
+      // possibly leading to false positives.
+      // Also, create separately to ensure they are created in the correct order, otherwise
+      // unit tests will fail.
       beforeEach(createEntities(si, 'bar', [
-        { p1: 'v1', p2: 'v1' },
-        // make sure this is not in alphabetical order,
-        // otherwise insertion order will be similar to the order we use for tests
-        // possibly leading to false positives
-        { p1: 'v2', p2: 'v3' },
+        { p1: 'v1', p2: 'v1' }
+      ]))
+      beforeEach(createEntities(si, 'bar', [
+        { p1: 'v2', p2: 'v3' }
+      ]))
+      beforeEach(createEntities(si, 'bar', [
         { p1: 'v3', p2: 'v2' }
       ]))
       beforeEach(createRelationships(si, 'foo',
@@ -1494,7 +1512,9 @@ function cyphertest (settings) {
       {
         name: 'apple',
         price: 100
-      },
+      }
+    ]))
+    before(createEntities(si, 'product', [
       { name:
         'pear',
         price: 200
