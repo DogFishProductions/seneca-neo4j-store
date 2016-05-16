@@ -4,6 +4,7 @@ language: node_js
 env:
   - SENECA_VER=@1.x.x
   - SENECA_VER=@2.x.x
+  - DOCKER_COMPOSE_VERSION: 1.6.0dev
 
 node_js:
   - '4'
@@ -15,8 +16,15 @@ cache:
 services:
   - docker
 
-before_script:
+before_install:
+  - sudo rm /usr/local/bin/docker-compose
+  - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
+  - chmod +x docker-compose
+  - sudo mv docker-compose /usr/local/bin
   - docker-compose up
+
+script:
+  - npm test
 
 after_script:
   - docker-compose stop

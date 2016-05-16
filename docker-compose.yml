@@ -5,7 +5,7 @@ store:
  volumes:
   - $PWD:/home/redjam/src
  user: redjam
- command: bash -c "cd /home/redjam/src && npm install && npm test && npm run coverage"
+ command: bash -c "cd /home/redjam/src && npm install && npm test"
 
 neo4j:
  image: neo4j:2.3.2
