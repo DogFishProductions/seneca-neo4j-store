@@ -5,8 +5,9 @@ env:
   global:
     - DOCKER_VERSION=1.9.0-0~trusty
     - DOCKER_COMPOSE_VERSION=1.6.0
-  - SENECA_VER=@1.x.x
-  - SENECA_VER=@2.x.x
+  matrix:
+    - SENECA_VER=@1.x.x
+    - SENECA_VER=@2.x.x
 
 node_js:
   - '4'
