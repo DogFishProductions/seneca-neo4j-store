@@ -157,10 +157,10 @@ Licensed under [MIT][].
 
 [npm-badge]: https://img.shields.io/npm/v/seneca-neo4j-store.svg
 [npm-url]: https://npmjs.com/package/seneca-neo4j-store
-[travis-badge]: https://travis-ci.org/senecajs/seneca-neo4j-store.svg
-[travis-url]: https://travis-ci.org/senecajs/seneca-neo4j-store
-[coverage-badge]: https://coveralls.io/repos/senecajs/seneca-neo4j-store/badge.svg?branch=master&service=github
-[coverage-url]: https://coveralls.io/github/senecajs/seneca-neo4j-store?branch=master
+[travis-badge]: https://travis-ci.org/redjamjar/seneca-neo4j-store.svg
+[travis-url]: https://travis-ci.org/redjamjar/seneca-neo4j-store
+[coveralls-badge]: https://coveralls.io/repos/redjamjar/seneca-neo4j-store/badge.svg?branch=master&service=github
+[coveralls-url]: https://coveralls.io/github/redjamjar/seneca-neo4j-store?branch=master
 [david-badge]: https://david-dm.org/redjamjar/seneca-neo4j-store.svg
 [david-url]: https://david-dm.org/redjamjar/seneca-neo4j-store
 [standard-badge]: https://raw.githubusercontent.com/feross/standard/master/badge.png
