@@ -540,16 +540,9 @@ module.exports = function (options) {
     var _q = _.cloneDeep(args.q)
     var _statement
 
-    if (!_q.sort$) {
-      var _newsort
-      if (!_.isArray(_q)) {
-        _newsort = { _id: -1 }
-      }
-      else {
-        _newsort = { id: 1 }
-      }
+    if (!_q.sort$ && !(_.isArray(_q) || _.isString(_q))) {
       try {
-        _q.sort$ = _newsort
+        _q.sort$ = { _id: -1 }
       }
       catch (e) {
         // do nothing
