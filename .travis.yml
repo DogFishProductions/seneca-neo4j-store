@@ -16,8 +16,7 @@ services:
   - docker
 
 before_script:
-  - docker-compose up neo4j
-  - docker-compose up store
+  - docker-compose up
 
 after_script:
   - docker-compose stop
