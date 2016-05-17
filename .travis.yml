@@ -33,10 +33,13 @@ script:
   - docker-compose up -d store
   - docker-compose ps store
   - CONTINUE=true
-  - while $CONTINUE; do sleep 5; RESULT=$(docker-compose ps store | grep -Eo '(Exit )[0-9]' | awk '{print $2}'); if [[ $RESULT -eq '0' || $RESULT -eq '1' ]]; then CONTINUE=false; fi; done
+  - RESULT=-1
+  - while $CONTINUE; do sleep 5; RESULT=$(docker-compose ps store | grep -Eo '(Exit )[0-9]' | awk '{print $2}'); if [[ -n $RESULT ]] && [[ $RESULT -eq '0' || $RESULT -eq '1' ]]; then echo "done" && CONTINUE=false; else echo "checking for exit"; fi; done
   - docker logs senecaneo4jstore_store_1
   - docker-compose ps store
-  - if [[ $RESULT -eq '0' ]]; then $(exit 0); else $(exit 1); fi
+  - echo "CONTINUE ${CONTINUE}"
+  - echo "RESULT ${RESULT}"
+  - if [[ -n $RESULT ]] && [[ $RESULT -eq '0' ]]; then $(exit 0); else $(exit 1); fi
 
 after_script:
   - docker-compose stop
