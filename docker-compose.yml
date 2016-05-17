@@ -2,10 +2,8 @@ store:
  build: .
  links:
   - neo4j
- volumes:
-  - $PWD:/home/redjam/src
  user: redjam
- command: bash -c "cd /home/redjam/src && whoami && ls -la && npm install && npm test"
+ command: bash -c "cd /home/redjam/src && npm install && npm test"
 
 neo4j:
  image: neo4j:2.3.2
