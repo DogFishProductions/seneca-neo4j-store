@@ -33,7 +33,23 @@ script:
   - docker-compose up -d store
   - docker-compose ps store
   - CONTINUE=true
-  - while $CONTINUE; do sleep 5; RESULT=$(docker-compose ps store | grep -Eo '(Exit )[0-9]' | awk '{print $2}'); if [ $RESULT=0 -o $RESULT=1 ]; then if [ $RESULT=0 ]; then { CONTINUE=false; exit 0 }; else { CONTINUE=false; exit 1 }; fi; fi; done
+  - while $CONTINUE
+  - do
+  -   sleep 5
+  -   RESULT=$(docker-compose ps store | grep -Eo '(Exit )[0-9]' | awk '{print $2}')
+  -   echo "RESULT: ${RESULT}"
+  -   if [ $RESULT=0 -o $RESULT=1 ]
+  -   then
+  -     if [ $RESULT=0 ]
+  -     then 
+  -       CONTINUE=false
+  -       exit 0
+  -     else
+  -       CONTINUE=false
+  -       exit 1
+  -     fi
+  -   fi
+  - done
 
 after_script:
   - docker-compose stop
