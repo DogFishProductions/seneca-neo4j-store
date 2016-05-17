@@ -29,10 +29,11 @@ before_install:
 
 script:
   - docker-compose up -d neo4j
+  - docker-compose ps neo4j
   - docker-compose up -d store
-  - wait 2
-  - RESULT=$(docker-compose ps store | grep -Eo '(Exit )[0-9]' | awk '{print $2}')
-  - if [ $RESULT=0 ]; then exit 0; else exit 1; fi;
+  - docker-compose ps store
+  - CONTINUE=true
+  - while $CONTINUE; do sleep 5; RESULT=$(docker-compose ps store | grep -Eo '(Exit )[0-9]' | awk '{print $2}'); if [ $RESULT=0 -o $RESULT=1 ]; then if [ $RESULT=0 ]; then { CONTINUE=false; exit 0 }; else { CONTINUE=false; exit 1 }; fi; fi; done
 
 after_script:
   - docker-compose stop
