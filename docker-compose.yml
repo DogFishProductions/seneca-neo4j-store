@@ -3,7 +3,7 @@ store:
  links:
   - neo4j
  user: redjam
- command: bash -c "cd /home/redjam/src && npm install && npm test"
+ command: bash -c "cd /home/redjam/src && npm install && npm test && npm run coverage"
 
 neo4j:
  image: neo4j:2.3.2
