@@ -28,8 +28,8 @@ before_install:
   - sudo mv docker-compose /usr/local/bin
 
 script:
-  - docker-compose up neo4j
-  - docker-compose up store
+  - docker-compose up -d neo4j
+  - docker-compose up -d store
   - wait 2
   - RESULT=$(docker-compose ps store | grep -Eo '(Exit )[0-9]' | awk '{print $2}')
   - if [ $RESULT=0 ]; then exit 0; else exit 1; fi;
