@@ -26,15 +26,10 @@ before_install:
   - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
   - chmod +x docker-compose
   - sudo mv docker-compose /usr/local/bin
-
-install:
-  - whoami
-  - npm install
-  - ls -la
-  - docker-compose up
+  - docker-compose up neo4j
 
 script:
-  - npm test
+  - docker-compose up store
 
 after_script:
   - docker-compose stop
