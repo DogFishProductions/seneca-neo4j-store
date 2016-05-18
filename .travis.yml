@@ -26,20 +26,21 @@ before_install:
   - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
   - chmod +x docker-compose
   - sudo mv docker-compose /usr/local/bin
+  - mkdir coverage
+  - chown -R 777 ./coverage
 
 script:
   - docker-compose up -d neo4j
   - docker-compose ps neo4j
-  - docker-compose up -d store
-  - docker-compose ps store
-  - CONTINUE=true
-  - RESULT=-1
-  - while $CONTINUE; do sleep 5; RESULT=$(docker-compose ps store | grep -Eo '(Exit )[0-9]' | awk '{print $2}'); if [[ -n $RESULT ]] && [[ $RESULT -eq '0' || $RESULT -eq '1' ]]; then echo "done" && CONTINUE=false; else echo "checking for exit"; fi; done
-  - docker logs senecaneo4jstore_store_1
-  - docker-compose ps store
-  - echo "CONTINUE ${CONTINUE}"
-  - echo "RESULT ${RESULT}"
-  - if [[ -n $RESULT ]] && [[ $RESULT -eq '0' ]]; then $(exit 0); else $(exit 1); fi
+  - docker-compose up test
+  - RESULT=$?
+  - docker-compose ps test
+  - echo "RESULT ${RESULT}" 
+  - if [[ -n $RESULT ]] && [[ $RESULT -eq '0' ]]; then docker-compose coverage; $(exit 0); else $(exit 1); fi
+
+after_success:
+  - npm install coveralls
+  - cat coverage/coverage.lcat | ./node_modules/coveralls/bin/coveralls.js
 
 after_script:
   - docker-compose stop

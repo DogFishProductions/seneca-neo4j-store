@@ -1,9 +1,18 @@
-store:
+test:
  build: .
  links:
   - neo4j
  user: redjam
- command: bash -c "cd /home/redjam/src && npm install && npm test && npm run coverage"
+ command: bash -c "cd /home/redjam/src && npm install && npm install seneca${SENECA_VER} && npm test && npm run coverage"
+
+coverage:
+ build: .
+ volumes:
+  - $PWD/coverage:/home/redjam/src/coverage
+ links:
+  - neo4j
+ user: redjam
+ command: bash -c "cd /home/redjam/src && npm install && npm install seneca${SENECA_VER} && npm run coverage"
 
 neo4j:
  image: neo4j:2.3.2

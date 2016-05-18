@@ -22,7 +22,7 @@
     "start": "docker-compose start neo4j server",
     "stop": "docker-compose stop neo4j server",
     "lint": "lab -dL",
-    "coverage": "lab -s test/*test.js  -r lcov | coveralls",
+    "coverage": "lab -s test/*test.js  -r lcov > coverage/coverage.lcov",
     "annotate": "docco neo4j-store.js -o doc"
   },
   "keywords": [
