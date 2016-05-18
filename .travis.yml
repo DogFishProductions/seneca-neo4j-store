@@ -27,14 +27,14 @@ before_install:
   - chmod +x docker-compose
   - sudo mv docker-compose /usr/local/bin
   - mkdir coverage
-  - chmod -R 777 ./coverage
+  - chmod +w ./coverage
 
 script:
   - docker-compose up -d neo4j
   - docker-compose ps neo4j
   - docker-compose up test
-  - RESULT=$?
   - docker-compose ps test
+  - RESULT=$(docker-compose ps store | grep -Eo '(Exit )[0-9]' | awk '{print $2}')
   - echo "RESULT ${RESULT}" 
   - if [[ -n $RESULT ]] && [[ $RESULT -eq '0' ]]; then docker-compose coverage; $(exit 0); else $(exit 1); fi
 
