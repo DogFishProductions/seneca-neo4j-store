@@ -27,7 +27,7 @@ before_install:
   - chmod +x docker-compose
   - sudo mv docker-compose /usr/local/bin
   - mkdir coverage
-  - chown -R 777 ./coverage
+  - chmod -R 777 ./coverage
 
 script:
   - docker-compose up -d neo4j
