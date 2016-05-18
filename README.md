@@ -25,7 +25,7 @@ separately.
 
 ```
 npm install seneca
-npm install seneca-neo4j-store
+npm install seneca-neo4j2-store
 ```
 
 ## Quick Example
