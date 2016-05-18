@@ -41,7 +41,7 @@ script:
 
 after_success:
   - npm install coveralls
-  - sed -i '.bak' 's/\/home\/redjam\/src\//.\//g' coverage.lcov
+  - sed -i '.bak' 's/\/home\/redjam\/src\//\.\//g' coverage.lcov
   - cat coverage/coverage.lcov
   - cat coverage/coverage.lcov | ./node_modules/coveralls/bin/coveralls.js
 
