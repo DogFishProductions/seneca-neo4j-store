@@ -36,10 +36,11 @@ script:
   - docker-compose ps test
   - RESULT=$(docker-compose ps test | grep -Eo '(Exit )[0-9]' | awk '{print $2}')
   - echo "RESULT ${RESULT}" 
-  - if [[ -n $RESULT ]] && [[ $RESULT -eq '0' ]]; then docker-compose coverage; $(exit 0); else $(exit 1); fi
+  - if [[ -n $RESULT ]] && [[ $RESULT -eq '0' ]]; then docker-compose up coverage; $(exit 0); else $(exit 1); fi
 
 after_success:
   - npm install coveralls
+  - cat coverage/coverage.lcat
   - cat coverage/coverage.lcat | ./node_modules/coveralls/bin/coveralls.js
 
 after_script:
