@@ -34,7 +34,7 @@ script:
   - docker-compose ps neo4j
   - docker-compose up test
   - docker-compose ps test
-  - RESULT=$(docker-compose ps store | grep -Eo '(Exit )[0-9]' | awk '{print $2}')
+  - RESULT=$(docker-compose ps test | grep -Eo '(Exit )[0-9]' | awk '{print $2}')
   - echo "RESULT ${RESULT}" 
   - if [[ -n $RESULT ]] && [[ $RESULT -eq '0' ]]; then docker-compose coverage; $(exit 0); else $(exit 1); fi
 
