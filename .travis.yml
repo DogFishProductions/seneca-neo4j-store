@@ -41,8 +41,8 @@ script:
 
 after_success:
   - npm install coveralls
-  - cat coverage/coverage.lcat
-  - cat coverage/coverage.lcat | ./node_modules/coveralls/bin/coveralls.js
+  - cat coverage/coverage.lcov
+  - cat coverage/coverage.lcov | ./node_modules/coveralls/bin/coveralls.js
 
 after_script:
   - docker-compose stop
