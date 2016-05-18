@@ -11,7 +11,7 @@
 var _ = require('lodash')
 var Request = require('request')
 var Uuid = require('node-uuid')
-var DefaultConfig = require('./default_config.json')
+var DefaultConfig = require('./config/default_config.json')
 var StatementBuilder = require('./lib/statement-builder.js')
 
 var Q = require('q')

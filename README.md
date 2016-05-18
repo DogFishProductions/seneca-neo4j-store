@@ -1,5 +1,6 @@
 # seneca-neo4j-store
 
+[![npm version][npm-badge]][npm-url]
 [![Build Status][travis-badge]][travis-url]
 [![Coverage Status][coveralls-badge]][coveralls-url]
 [![Dependency Status][david-badge]][david-url]
@@ -127,7 +128,7 @@ The standard Seneca query format is supported for both relationships and nodes:
 
 - `.list$({f1:v1,...}, {fields$:['fd1','f2']})` means only return the listed fields.
 
-Note: you can use `sort$`, `limit$`, `skip$` and `fields$` together in both the `relationship$` object and the related node data.  However, when including the `relationship$` object `limit$` and `skip$` can only be applied either to the relationship or to the related node but not to both together.  This is because `sort$` and `fields$` support the use of identifiers to indicate which entities the associated properties should apply to whereas `limit$` and `skip$` only have integer values.  If used together in both `relationship$` and the related object the `relationship$` values will be applied in preference to the related node values.
+Note: you can use `sort$`, `limit$`, `skip$` and `fields$` together in both the `relationship$` object and the related node data.  However, when including the `relationship$` object `limit$` and `skip$` can only be applied either to the relationship or to the related node but not to both together.  This is because `sort$` and `fields$` support the use of identifiers to indicate which entities the associated properties should apply to whereas `limit$` and `skip$` only have integer values.  If used together in both `relationship$` and the related object the `relationship$` values will be applied in preference to the relationship values.
 
 Note also that, unlike other data stores, this data store does use attributes from the entity to filter queries but only in the context of the `relationship$` object.
 
@@ -137,13 +138,13 @@ I prefer to develop my code in Docker as it means I can be certain which version
 Build the images:
 ```sh
 docker-compose up neo4j
-docker-compose up store
+docker-compose up test
 ```
 
 Start the containers and run the tests (start the neo4j container first to ensure it is running before you run tests):
 ```sh
 docker-compose start neo4j
-docker-compose start store
+docker-compose start test
 ```
 
 Stop the containers:
@@ -155,8 +156,8 @@ docker-compose stop
 Copyright (c) 2016, Paul Nebel.
 Licensed under [MIT][].
 
-[npm-badge]: https://img.shields.io/npm/v/seneca-neo4j-store.svg
-[npm-url]: https://npmjs.com/package/seneca-neo4j-store
+[npm-badge]: https://img.shields.io/npm/v/seneca-neo4j2-store.svg
+[npm-url]: https://npmjs.com/package/seneca-neo4j2-store
 [travis-badge]: https://travis-ci.org/redjamjar/seneca-neo4j-store.svg
 [travis-url]: https://travis-ci.org/redjamjar/seneca-neo4j-store
 [coveralls-badge]: https://coveralls.io/repos/github/redjamjar/seneca-neo4j-store/badge.svg?branch=master
@@ -165,7 +166,6 @@ Licensed under [MIT][].
 [david-url]: https://david-dm.org/redjamjar/seneca-neo4j-store
 [standard-badge]: https://raw.githubusercontent.com/feross/standard/master/badge.png
 [standard-style]: https://github.com/feross/standard
-
 
 [Neo4j]: http://neo4j.com/
 [MIT]: ./LICENSE.txt
