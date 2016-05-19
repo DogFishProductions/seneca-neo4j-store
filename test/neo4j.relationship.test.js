@@ -433,7 +433,7 @@ function basictest (settings) {
         })
       })
 
-      it('should list entities by two relationship type and properties', function (done) {
+      it('should list entities by relationship type and two properties', function (done) {
         var foo = si.make('foo', { id: 'source' })
         foo.updateRelationship$({ relationship$: { relatedNodeLabel: 'bar', type: 'RELATED_TO', data: { int: 12, str: 'ccc' } }, p1: 'v2' }, function (err, rel) {
           Assert.isNull(err)
@@ -443,6 +443,13 @@ function basictest (settings) {
             Assert.equal(res[0].p1, 'v2')
           }))
         })
+      })
+
+      it('should return a count of entities by label', function(done) {
+        var bar = si.make('bar')
+        bar.list$({ count$: true }, verify(done, function(res) {
+          Assert.equal(res, 2)
+        }))
       })
     })
 

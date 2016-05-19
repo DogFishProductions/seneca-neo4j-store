@@ -567,7 +567,7 @@ module.exports = function (options) {
     var _q = _.cloneDeep(args.q)
     var _statement
 
-    if (!_q.sort$) {
+    if (!_q.sort$ && !_q.count$) {
       var _newsort
       if (!_.isArray(_q)) {
         _newsort = { _id: -1 }
@@ -581,6 +581,9 @@ module.exports = function (options) {
       catch (e) {
         // do nothing
       }
+    }
+    else if (_q.sort$ && _q.count$) {
+      delete _q.sort$
     }
     if (_q.relationship$) {
       _statement = StatementBuilder.retrieveRelatedStatement(args.qent, _q)
