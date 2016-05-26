@@ -1,6 +1,6 @@
 {
   "name": "seneca-neo4j2-store",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Neo4j graph database layer for Seneca framework",
   "main": "neo4j-store.js",
   "license": "MIT",
