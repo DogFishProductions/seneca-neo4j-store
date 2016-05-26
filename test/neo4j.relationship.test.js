@@ -445,9 +445,9 @@ function basictest (settings) {
         })
       })
 
-      it('should return a count of entities by label', function(done) {
+      it('should return a count of entities by label', function (done) {
         var bar = si.make('bar')
-        bar.list$({ count$: true }, verify(done, function(res) {
+        bar.list$({ count$: true }, verify(done, function (res) {
           Assert.equal(res, 2)
         }))
       })
