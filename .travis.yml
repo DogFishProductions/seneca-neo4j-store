@@ -1,28 +1,46 @@
+sudo: required
+
 language: node_js
 
-node_js:
-    - "0.11"
-    - "0.10"
-
-jdk:
-    - oraclejdk7  # needed for local Neo4j 2.0+
-
 env:
-    # test across multiple versions of Neo4j:
-    - NEO4J_VERSION="2.0.1"
+  global:
+    - DOCKER_VERSION=1.9.0-0~trusty
+    - DOCKER_COMPOSE_VERSION=1.6.0
+  matrix:
+    - SENECA_VER=@1.x.x
+    - SENECA_VER=@2.x.x
 
-matrix:
-    allow_failures:
-        - node_js: "0.11"
+node_js:
+  - '4'
 
-before_install:
-    # install Neo4j locally:
-    - wget dist.neo4j.org/neo4j-community-$NEO4J_VERSION-unix.tar.gz
-    - tar -xzf neo4j-community-$NEO4J_VERSION-unix.tar.gz
-    - neo4j-community-$NEO4J_VERSION/bin/neo4j start
+cache:
+  directories:
+  - node_modules
 
-# don't CI feature branches, but note that this *does* CI PR merge commits --
-# including before they're made! =)
-branches:
-  only:
-    - master
+services:
+  - docker
+
+before_install:  
+  - sudo apt-get -o Dpkg::Options::="--force-confnew" install -y docker-engine=${DOCKER_VERSION}
+  - sudo rm /usr/local/bin/docker-compose
+  - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
+  - chmod +x docker-compose
+  - sudo mv docker-compose /usr/local/bin
+  - mkdir coverage
+  - chmod a+w ./coverage
+  - ls -la
+
+script:
+  - docker-compose up -d neo4j
+  - docker-compose up test
+  - RESULT=$(docker-compose ps test | grep -Eo '(Exit )[0-9]' | awk '{print $2}')
+  - echo "RESULT ${RESULT}" 
+  - if [[ -n $RESULT ]] && [[ $RESULT -eq '0' ]]; then docker-compose up coverage; $(exit 0); else $(exit 1); fi
+
+after_success:
+  - npm install coveralls
+  - sed -i 's/\/home\/redjam\/src\///g' coverage/coverage.lcov
+  - cat coverage/coverage.lcov | ./node_modules/coveralls/bin/coveralls.js
+
+after_script:
+  - docker-compose stop

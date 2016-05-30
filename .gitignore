@@ -23,3 +23,26 @@ build/Release
 # Deployed apps should consider commenting this line out:
 # see https://npmjs.org/doc/faq.html#Should-I-check-my-node_modules-folder-into-git
 node_modules
+
+*~
+.DS_Store
+
+lib-cov
+*.csv
+*.dat
+*.out
+*.gz
+
+pids
+logs
+results
+
+npm-debug.log
+
+README.html
+
+test/dbconfig.mine.js
+
+.idea/
+.settings/
+.vscode/
