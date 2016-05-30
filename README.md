@@ -1,3 +1,6 @@
+![Seneca](http://senecajs.org/files/assets/seneca-logo.png)
+> A [Seneca.js][] Web plugin
+
 # seneca-neo4j-store
 
 [![npm version][npm-badge]][npm-url]
@@ -9,7 +12,7 @@
 
 ## Description
 
-A storage engine that uses [neo4j][] to persist data. Please note that this is not (yet) officially part of [senecajs.org][].
+A storage engine that uses [neo4j][] to persist data.
 
 If you're using this module, and need help, you can post a [github issue][].
 
