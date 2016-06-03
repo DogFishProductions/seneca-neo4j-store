@@ -393,7 +393,8 @@ module.exports = function (options) {
         var _list = []
         results = _.castArray(results)
         results.forEach(function (result) {
-          _list.push(_self.seneca.make$('obj', _parseResult(result)))
+          var _name = _self.args.name$ || 'entity'
+          _list.push(_self.seneca.make$(_name, _parseResult(result)))
         })
         _self.seneca.log(_self.args.tag$, _self.cypher, null)
         return _self.next(null, _list)

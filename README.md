@@ -135,7 +135,33 @@ Note: you can use `sort$`, `limit$`, `skip$` and `fields$` together in both the 
 
 Note also that, unlike other data stores, this data store does use attributes from the entity to filter queries but only in the context of the `relationship$` object.
 
-## To run tests with Docker
+###Native Driver
+
+As with all seneca stores, you can access the native driver.
+
+`entity.native$(function(err, dbinst){ cypher: ..., params: ..., name$: ...})`
+
+The native driver takes 3 parameters:
+
+- `cypher` - The native cypher query statement (required)
+
+- `params` - The parameters associated with the cypher query (optional)
+
+- `name$` - The entity name to be associated with the returned results, as in `$-/-/<label>;...`.  If not supplied, the entity name will be 'entity', as in `$-/-/entity;...` (optional)
+
+With the GraphDatabase object you can perform any query using [Cypher](http://docs.neo4j.org/chunked/stable/cypher-query-lang.html). Fore more informatino about node-neo4j chekout [here](http://coffeedoc.info/github/thingdom/node-neo4j/master/)
+
+```javascript
+entity.native$(function(err, dbinst){
+  dbinst.query('MATCH (n) RETURN n LIMIT 25', null, function (err,results){
+    if(!err){
+      return results;
+    }
+  });
+})
+```
+
+### To run tests with Docker
 I prefer to develop my code in Docker as it means I can be certain which versions of software are being used.  It also means that I don't have to install anything other than docker on my computer.  To this end, I've included a docker-compose.yml file that creates containers for both Neo4j (using the official Docker image) and seneca-neo4j-store (using a highly insecure image I've created purely for the purposes of local testing - don't say I didn't warn you) and runs the unit tests within Docker. Start the neo4j container first to ensure it is running before you run tests.
 
 Build the images:

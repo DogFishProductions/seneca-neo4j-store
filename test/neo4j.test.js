@@ -86,4 +86,9 @@ describe('Neo4J suite tests ', function () {
     seneca: si,
     script: lab
   })
+
+  Relationships.cyphertest({
+    seneca: si,
+    script: lab
+  })
 })

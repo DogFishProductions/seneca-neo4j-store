@@ -1513,7 +1513,7 @@ function cyphertest (settings) {
 
   var Product = si.make('product')
 
-  describe('Relationship Cypher support', function () {
+  describe('Native Cypher support', function () {
     before(clearDb(si))
     before(createEntities(si, 'product', [
       {
@@ -1533,7 +1533,7 @@ function cyphertest (settings) {
         if (err) {
           return done(err)
         }
-        dbInst.query({ cypher: 'MATCH (n:product) RETURN n ORDER BY n.price' }, verify(done, function (list) {
+        dbInst.query({ cypher: 'MATCH (n:product) RETURN n ORDER BY n.price', name$: 'product' }, verify(done, function (list) {
           Assert.lengthOf(list, 2)
 
           Assert.equal(list[0].entity$, '-/-/product')
@@ -1547,18 +1547,23 @@ function cyphertest (settings) {
       })
     })
 
-    it('should accept and array with query and parameters', function (done) {
-      Product.native$({ cypher: 'MATCH (n:product) WHERE n.price >= {lower} AND n.price <= {upper} RETURN n ORDER BY n.price', parameters: { lower: 0, upper: 1000 } }, verify(done, function (list) {
-        Assert.lengthOf(list, 2)
+    it('should accept an array with query and parameters', function (done) {
+      Product.native$(function (err, dbInst) {
+        if (err) {
+          return done(err)
+        }
+        dbInst.query({ cypher: 'MATCH (n:product) WHERE n.price >= {lower} AND n.price <= {upper} RETURN n ORDER BY n.price', parameters: { lower: 0, upper: 1000 }, name$: 'product' }, verify(done, function (list) {
+          Assert.lengthOf(list, 2)
 
-        Assert.equal(list[0].entity$, '-/-/product')
-        Assert.equal(list[0].name, 'apple')
-        Assert.equal(list[0].price, 100)
+          Assert.equal(list[0].entity$, '-/-/product')
+          Assert.equal(list[0].name, 'apple')
+          Assert.equal(list[0].price, 100)
 
-        Assert.equal(list[1].entity$, '-/-/product')
-        Assert.equal(list[1].name, 'pear')
-        Assert.equal(list[1].price, 200)
-      }))
+          Assert.equal(list[1].entity$, '-/-/product')
+          Assert.equal(list[1].name, 'pear')
+          Assert.equal(list[1].price, 200)
+        }))
+      })
     })
   })
 
