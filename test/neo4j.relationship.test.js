@@ -1529,17 +1529,22 @@ function cyphertest (settings) {
     ]))
 
     it('should accept a string query', function (done) {
-      Product.native$({ cypher: 'MATCH (n:product) RETURN n ORDER BY n.price' }, verify(done, function (list) {
-        Assert.lengthOf(list, 2)
+      Product.native$(function (err, dbInst) {
+        if (err) {
+          return done(err)
+        }
+        dbInst.query({ cypher: 'MATCH (n:product) RETURN n ORDER BY n.price' }, verify(done, function (list) {
+          Assert.lengthOf(list, 2)
 
-        Assert.equal(list[0].entity$, '-/-/product')
-        Assert.equal(list[0].name, 'apple')
-        Assert.equal(list[0].price, 100)
+          Assert.equal(list[0].entity$, '-/-/product')
+          Assert.equal(list[0].name, 'apple')
+          Assert.equal(list[0].price, 100)
 
-        Assert.equal(list[1].entity$, '-/-/product')
-        Assert.equal(list[1].name, 'pear')
-        Assert.equal(list[1].price, 200)
-      }))
+          Assert.equal(list[1].entity$, '-/-/product')
+          Assert.equal(list[1].name, 'pear')
+          Assert.equal(list[1].price, 200)
+        }))
+      })
     })
 
     it('should accept and array with query and parameters', function (done) {
