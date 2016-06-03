@@ -147,13 +147,13 @@ The native driver takes 3 parameters:
 
 - `params` - The parameters associated with the cypher query (optional)
 
-- `name$` - The entity name to be associated with the returned results, as in `$-/-/<label>;...`.  If not supplied, the entity name will be 'entity', as in `$-/-/entity;...` (optional)
+- `name$` - The entity name to be associated with the returned results, as in `$-/-/<name>;...`.  If not supplied, the entity name will be 'entity', as in `$-/-/entity;...` (optional)
 
 With the GraphDatabase object you can perform any query using [Cypher](http://docs.neo4j.org/chunked/stable/cypher-query-lang.html). Fore more informatino about node-neo4j chekout [here](http://coffeedoc.info/github/thingdom/node-neo4j/master/)
 
 ```javascript
 entity.native$(function(err, dbinst){
-  dbinst.query('MATCH (n) RETURN n LIMIT 25', null, function (err,results){
+  dbinst.query({ cypher: 'MATCH (n) RETURN n LIMIT 25' }, function (err,results){
     if(!err){
       return results;
     }
