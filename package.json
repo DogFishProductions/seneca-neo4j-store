@@ -1,21 +1,21 @@
 {
   "name": "seneca-neo4j-store",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Neo4j graph database layer for Seneca framework",
   "main": "neo4j-store.js",
   "license": "MIT",
-  "author": "Paul Nebel <paul.nebel@redjamjar.net> (http://www.redjamjar.net)",
+  "author": "Paul Nebel <paul@nebel.io> (http://www.paulnebel.io)",
   "contributors" :[{
     "name": "Michele Capra",
     "email": "michelecapra83@gmail.com"
   }],
   "bugs": {
-    "url": "https://github.com/redjamjar/seneca-neo4j-store/issues"
+    "url": "https://github.com/DogFishProductions/seneca-neo4j-store/issues"
   },
-  "homepage": "https://github.com/redjamjar/seneca-neo4j-store",
+  "homepage": "https://github.com/DogFishProductions/seneca-neo4j-store",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/redjamjar/seneca-neo4j-store.git"
+    "url": "git+https://github.com/DogFishProductions/seneca-neo4j-store.git"
   },
   "scripts": {
     "test": "lab test/*.test.js -v -L -m 20000 -t 72 -r console",

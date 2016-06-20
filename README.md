@@ -167,13 +167,13 @@ I prefer to develop my code in Docker as it means I can be certain which version
 Build the images:
 ```sh
 docker-compose up neo4j
-docker-compose up test
+docker-compose up store
 ```
 
 Start the containers and run the tests (start the neo4j container first to ensure it is running before you run tests):
 ```sh
 docker-compose start neo4j
-docker-compose start test
+docker-compose start store
 ```
 
 Stop the containers:
@@ -187,12 +187,12 @@ Licensed under [MIT][].
 
 [npm-badge]: https://img.shields.io/npm/v/seneca-neo4j-store.svg
 [npm-url]: https://npmjs.com/package/seneca-neo4j-store
-[travis-badge]: https://travis-ci.org/redjamjar/seneca-neo4j-store.svg
-[travis-url]: https://travis-ci.org/redjamjar/seneca-neo4j-store
-[coveralls-badge]: https://coveralls.io/repos/github/redjamjar/seneca-neo4j-store/badge.svg?branch=master
-[coveralls-url]: https://coveralls.io/github/redjamjar/seneca-neo4j-store?branch=master
-[david-badge]: https://david-dm.org/redjamjar/seneca-neo4j-store.svg
-[david-url]: https://david-dm.org/redjamjar/seneca-neo4j-store
+[travis-badge]: https://travis-ci.org/DogFishProductions/seneca-neo4j-store.svg
+[travis-url]: https://travis-ci.org/DogFishProductions/seneca-neo4j-store
+[coveralls-badge]: https://coveralls.io/repos/github/DogFishProductions/seneca-neo4j-store/badge.svg?branch=master
+[coveralls-url]: https://coveralls.io/github/DogFishProductions/seneca-neo4j-store?branch=master
+[david-badge]: https://david-dm.org/DogFishProductions/seneca-neo4j-store.svg
+[david-url]: https://david-dm.org/DogFishProductions/seneca-neo4j-store
 [standard-badge]: https://raw.githubusercontent.com/feross/standard/master/badge.png
 [standard-style]: https://github.com/feross/standard
 
@@ -201,4 +201,4 @@ Licensed under [MIT][].
 [Senecajs org]: https://github.com/senecajs/
 [Seneca.js]: https://www.npmjs.com/package/seneca
 [senecajs.org]: http://senecajs.org/
-[github issue]: https://github.com/redjamjar/seneca-neo4j-store/issues
+[github issue]: https://github.com/DogFishProductions/seneca-neo4j-store/issues
