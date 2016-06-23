@@ -50,7 +50,7 @@ describe('Neo4J suite tests ', function () {
     si.use(require('../neo4j-store.js'), dbConfig)
     si.ready(done)
   })
-
+/*
   Shared.basictest({
     seneca: si,
     senecaMerge: senecaMerge,
@@ -71,12 +71,12 @@ describe('Neo4J suite tests ', function () {
     seneca: si,
     script: lab
   })
-
+//*/
   Relationships.basictest({
     seneca: si,
     script: lab
   })
-
+/*
   Relationships.sorttest({
     seneca: si,
     script: lab
@@ -90,5 +90,5 @@ describe('Neo4J suite tests ', function () {
   Relationships.cyphertest({
     seneca: si,
     script: lab
-  })
+  })//*/
 })

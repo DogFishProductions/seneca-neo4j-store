@@ -16,6 +16,8 @@ var StatementBuilder = require('./lib/statement-builder.js')
 
 var Q = require('q')
 
+var Util = require('util')
+
 var _storeName = 'neo4j-store'
 var _actionRole = 'neo4j'
 var _internals = {}
@@ -32,6 +34,7 @@ var _internals = {}
  *  @returns  {Promise} The promise of a result.
  */
 var _executeCypher = function (cypher, params) {
+  console.log("cypher: " + Util.inspect(cypher))
   var _deferred = Q.defer()
   if (_.isEmpty(cypher)) {
     _deferred.resolve([])
@@ -53,12 +56,22 @@ var _executeCypher = function (cypher, params) {
       else {
         var _answer = []
         _results.forEach(function (result) {
+          console.log("cypher result: " + Util.inspect(result))
+          var _cols = result.columns
+          // check whether we have asked for a label to be returned with the results...
+          var _length = _cols.length
+          var _labelsReturned = true
+          if ((_length <= 1) || (_cols[_length-1].indexOf('labels') < 0)) {
+            _labelsReturned = false
+          }
+          console.log("labels returned: " + _labelsReturned)
           var _data = result.data
           if (_data) {
             _data.forEach(function (entry) {
               var _row = entry.row
               if (_row) {
                 if (cypher.indexOf(' AS ') >= 0) {
+                  console.log("WE HAVE AN 'AS' CLAUSE")
                   var _columns = result.columns
                   var _instance = {}
                   for (var _index in _columns) {
@@ -67,7 +80,14 @@ var _executeCypher = function (cypher, params) {
                   _answer.push(_instance)
                 }
                 else {
-                  _answer.push(_row[0])
+                  console.log("cypher row: " + Util.inspect(_row))
+                  if (!_labelsReturned) {
+                    // no labels returned so it's just an entity...
+                    _answer.push([_row[0], ['entity']])
+                  }
+                  else {
+                    _answer.push(_row)
+                  }
                 }
               }
             })
@@ -180,6 +200,15 @@ module.exports = function (options) {
     )
   }
 
+  var _createResultEntity = function (result, ent, label) {
+    var _props = _parseResult(result[0])
+    var _label = label || result[1][0] || 'entity'
+    var _canonArr = ent.canon$().split('/').reverse()
+    _canonArr[0] = _label
+    var _newCanon = _canonArr.reverse().join('/')
+    return _seneca.make$(_newCanon, _props)
+  }
+
   // the store interface returned to seneca
   var store = {
 
@@ -202,9 +231,9 @@ module.exports = function (options) {
      */
     save: function (args, next) {
       // to be called with the context of _performAction (= 'this')
-      var _success = function (result) {
+      var _success = function (results) {
         var _self = this
-        var _ent = _self.args.ent.make$(_parseResult(result[0]))
+        var _ent = _createResultEntity(results[0], _self.args.ent)
         _self.seneca.log(_self.args.tag$, _self.cypher, _ent)
         return _self.next(null, _ent)
       }
@@ -231,7 +260,7 @@ module.exports = function (options) {
       var _success = function (results) {
         var _self = this
         if (results[0]) {
-          var _ent = _self.args.qent.make$(_parseResult(results[0]))
+          var _ent = _createResultEntity(results[0], _self.args.qent)
           _self.seneca.log(_self.args.tag$, _self.cypher, _ent)
           return _self.next(null, _ent)
         }
@@ -258,14 +287,14 @@ module.exports = function (options) {
       var _success = function (results) {
         var _self = this
         if (_self.args.q.count$) {
-          return _self.next(null, results)
+          return _self.next(null, [results[0][0]])
         }
         if (_self.args.q.exists$) {
-          return _self.next(null, (results > 0))
+          return _self.next(null, (results[0][0] > 0))
         }
         var _list = []
         results.forEach(function (result) {
-          _list.push(_self.args.qent.make$(_parseResult(result)))
+          _list.push(_createResultEntity(result, _self.args.qent))
         })
         _self.seneca.log(_self.args.tag$, _self.cypher, null)
         return _self.next(null, _list)
@@ -410,7 +439,9 @@ module.exports = function (options) {
      *  @summary Creates a unique relationship between the objects.
      *
      *  The 'from' object matches the id in the supplied qent and the 'to' object(s) match the query parameters.
-     *  The relationship details are contained in the 'relationship$' object in the query.
+     *  The relationship details are contained in the 'relationship$' object in the query.  Note that this method
+     *  will always return an array since it is possible to create multiple relationships in a single call depending
+     *  upon the filter parameters passed in.
      *
      *  @since 1.0.0
      *
@@ -423,11 +454,16 @@ module.exports = function (options) {
      */
     saveRelationship: function (args, next) {
       // to be called with the context of _performAction (= 'this')
-      var _success = function (result) {
+      var _success = function (results) {
         var _self = this
-        var _ent = _self.seneca.make('rel').make$(_parseResult(result[0]))
-        _self.seneca.log(_self.args.tag$, _self.cypher, _ent)
-        return _self.next(null, _ent)
+        var _list = []
+        results = _.castArray(results)
+        results.forEach(function (result) {
+          var _ent = _createResultEntity(result, _self.args.qent, 'relationship')
+          _list.push(_ent)
+        })
+        _self.seneca.log(_self.args.tag$, _self.cypher, _list)
+        return _self.next(null, _list)
       }
       _performAction.call(_seneca, 'create_save_relationship_statement', _success, args, next)
     },

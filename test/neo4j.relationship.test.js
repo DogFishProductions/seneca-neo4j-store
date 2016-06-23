@@ -112,6 +112,7 @@ function basictest (settings) {
         var foo = si.make('foo', { id$: 'source' })
         foo.load$({ relationship$: reltemplate }, verify(done, function (bar) {
           Assert.isNotNull(bar)
+          Assert.equal(bar.canon$({object: true}).name, 'bar')
           Assert.equal(bar.id, 'sink')
           Assert.equal(bar.p1, 'v2')
           Assert.equal(bar.p2, 'z2')
@@ -141,6 +142,7 @@ function basictest (settings) {
         var foo = si.make('foo', { id: 'source' })
         foo.load$({ relationship$: reltemplate, p1: 'v2' }, verify(done, function (bar) {
           Assert.isNotNull(bar)
+          Assert.equal(bar.canon$({object: true}).name, 'bar')
           Assert.equal(bar.id, 'sink')
           Assert.equal(bar.p1, 'v2')
           Assert.equal(bar.p2, 'z2')
@@ -151,6 +153,7 @@ function basictest (settings) {
         var foo = si.make('foo', { id: 'source' })
         foo.load$({ relationship$: reltemplate, p1: 'v2', p2: 'z2' }, verify(done, function (bar) {
           Assert.isNotNull(bar)
+          Assert.equal(bar.canon$({object: true}).name, 'bar')
           Assert.equal(bar.id, 'sink')
           Assert.equal(bar.p1, 'v2')
           Assert.equal(bar.p2, 'z2')
@@ -200,9 +203,12 @@ function basictest (settings) {
         bar.save$(function (err, bar1) {
           Assert.isNull(err)
           var foo = si.make('foo', { p1: 'v1' })
-          foo.saveRelationship$({ relationship$: reltemplate }, function (err, rel1) {
+          foo.saveRelationship$({ relationship$: reltemplate }, function (err, rels) {
             Assert.isNull(err)
-            relverify(rel1.data$(false))
+            rels.forEach(function (rel) {
+              Assert.equal(rel.canon$({object: true}).name, 'relationship')
+              relverify(rel.data$(false))
+            })
             foo.list$({ relationship$: reltemplate }, verify(done, function (res) {
               Assert.lengthOf(res, 2)
             }))
@@ -233,12 +239,12 @@ function basictest (settings) {
           Assert.isNull(err)
           foo1.saveRelationship$({ relationship$: startTemplate }, function (err, rel1) {
             Assert.isNull(err)
-            Assert.equal(rel1.str, 'to-be-updated')
-            Assert.equal(rel1.num, 5)
+            Assert.equal(rel1[0].str, 'to-be-updated')
+            Assert.equal(rel1[0].num, 5)
 
             foo1.updateRelationship$({ relationship$: endTemplate }, verify(done, function (rel2) {
-              Assert.equal(rel2.str, 'updated')
-              Assert.equal(rel1.num, 5)
+              Assert.equal(rel2[0].str, 'updated')
+              Assert.equal(rel2[0].num, 5)
             }))
           })
         })
@@ -260,7 +266,7 @@ function basictest (settings) {
           foo1.saveRelationship$({ relationship$: rel.data$(true) }, verify(done, function (rel1) {
             // now that rel is in the database, modify the original data
             rel.data.str = 'bbb'
-            Assert.equal(rel1.str, 'aaa')
+            Assert.equal(rel1[0].str, 'aaa')
           }))
         })
       })
@@ -280,7 +286,7 @@ function basictest (settings) {
           Assert.isNull(err)
           foo1.saveRelationship$({ relationship$: rel.data$(true) }, verify(done, function (rel1) {
             // now that rel is in the database, modify the created data
-            rel1.str = 'bbb'
+            rel1[0].str = 'bbb'
             Assert.equal(rel.data.str, 'aaa')
           }))
         })
@@ -303,15 +309,15 @@ function basictest (settings) {
           Assert.isNull(err)
           foo1.saveRelationship$({ relationship$: rel }, function (err, rel1) {
             Assert.isNull(err)
-            Assert.equal(rel1.p1, rel.data.p1)
-            Assert.equal(rel1.p2, rel.data.p2)
-            Assert.equal(rel1.p3, rel.data.p3)
+            Assert.equal(rel1[0].p1, rel.data.p1)
+            Assert.equal(rel1[0].p2, rel.data.p2)
+            Assert.equal(rel1[0].p3, rel.data.p3)
             rel.data.p1 = null
             rel.data.p2 = undefined
             foo1.updateRelationship$({ relationship$: rel }, verify(done, function (rel2) {
-              Assert.notOk(rel2.p1)
-              Assert.notOk(rel2.p2)
-              Assert.equal(rel2.p3, rel.data.p3)
+              Assert.notOk(rel2[0].p1)
+              Assert.notOk(rel2[0].p2)
+              Assert.equal(rel2[0].p3, rel.data.p3)
             }))
           })
         })
@@ -510,8 +516,8 @@ function basictest (settings) {
           Assert.isNull(err)
           foo.saveRelationship$({ relationship$: bamTemplate }, function (err, rel) {
             Assert.isNull(err)
-            Assert.equal(rel.str, 'str')
-            Assert.equal(rel.num, 5)
+            Assert.equal(rel[0].str, 'str')
+            Assert.equal(rel[0].num, 5)
             foo.list$({ relationship$: { type: 'RELATIONSHIP_WITH' } }, function (err, res0) {
               Assert.isNull(err)
               Assert.lengthOf(res0, 1)
