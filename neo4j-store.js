@@ -16,15 +16,13 @@ var StatementBuilder = require('./lib/statement-builder.js')
 
 var Q = require('q')
 
-var Util = require('util')
-
 var _storeName = 'neo4j-store'
 var _actionRole = 'neo4j'
 var _internals = {}
 
 /** @function _executeCypher
  *
- *  @summary Runs a query on the graphstore and returns the result.
+ *  @summary Runs a query on the graphstore and returns the result as an array.
  *
  *  @since 1.0.0
  *
@@ -34,7 +32,6 @@ var _internals = {}
  *  @returns  {Promise} The promise of a result.
  */
 var _executeCypher = function (cypher, params) {
-  console.log("cypher: " + Util.inspect(cypher))
   var _deferred = Q.defer()
   if (_.isEmpty(cypher)) {
     _deferred.resolve([])
@@ -56,38 +53,24 @@ var _executeCypher = function (cypher, params) {
       else {
         var _answer = []
         _results.forEach(function (result) {
-          console.log("cypher result: " + Util.inspect(result))
           var _cols = result.columns
           // check whether we have asked for a label to be returned with the results...
           var _length = _cols.length
           var _labelsReturned = true
-          if ((_length <= 1) || (_cols[_length-1].indexOf('labels') < 0)) {
+          if ((_length <= 1) || (_cols[_length - 1].indexOf('labels') < 0)) {
             _labelsReturned = false
           }
-          console.log("labels returned: " + _labelsReturned)
           var _data = result.data
           if (_data) {
             _data.forEach(function (entry) {
               var _row = entry.row
               if (_row) {
-                if (cypher.indexOf(' AS ') >= 0) {
-                  console.log("WE HAVE AN 'AS' CLAUSE")
-                  var _columns = result.columns
-                  var _instance = {}
-                  for (var _index in _columns) {
-                    _instance[_columns[_index]] = _row[_index]
-                  }
-                  _answer.push(_instance)
+                if (!_labelsReturned) {
+                  // no labels returned so it's just an entity...
+                  _answer.push([_row[0], ['entity']])
                 }
                 else {
-                  console.log("cypher row: " + Util.inspect(_row))
-                  if (!_labelsReturned) {
-                    // no labels returned so it's just an entity...
-                    _answer.push([_row[0], ['entity']])
-                  }
-                  else {
-                    _answer.push(_row)
-                  }
+                  _answer.push(_row)
                 }
               }
             })
@@ -423,7 +406,7 @@ module.exports = function (options) {
         results = _.castArray(results)
         results.forEach(function (result) {
           var _name = _self.args.name$ || 'entity'
-          _list.push(_self.seneca.make$(_name, _parseResult(result)))
+          _list.push(_self.seneca.make$(_name, _parseResult(result[0])))
         })
         _self.seneca.log(_self.args.tag$, _self.cypher, null)
         return _self.next(null, _list)
@@ -459,8 +442,7 @@ module.exports = function (options) {
         var _list = []
         results = _.castArray(results)
         results.forEach(function (result) {
-          var _ent = _createResultEntity(result, _self.args.qent, 'relationship')
-          _list.push(_ent)
+          _list.push(_createResultEntity(result, _self.args.qent, 'relationship'))
         })
         _self.seneca.log(_self.args.tag$, _self.cypher, _list)
         return _self.next(null, _list)
@@ -486,11 +468,15 @@ module.exports = function (options) {
      */
     updateRelationship: function (args, next) {
       // to be called with the context of _performAction (= 'this')
-      var _success = function (result) {
+      var _success = function (results) {
         var _self = this
-        var _ent = _self.seneca.make('rel').make$(_parseResult(result[0]))
-        _self.seneca.log(_self.args.tag$, _self.cypher, _ent)
-        return _self.next(null, _ent)
+        var _list = []
+        results = _.castArray(results)
+        results.forEach(function (result) {
+          _list.push(_createResultEntity(result, _self.args.qent, 'relationship'))
+        })
+        _self.seneca.log(_self.args.tag$, _self.cypher, _list)
+        return _self.next(null, _list)
       }
       _performAction.call(_seneca, 'create_update_relationship_statement', _success, args, next)
     }

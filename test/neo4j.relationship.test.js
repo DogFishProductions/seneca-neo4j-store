@@ -119,6 +119,17 @@ function basictest (settings) {
         }))
       })
 
+      it('should load selected fields for a related entity', function (done) {
+        var foo = si.make('foo', { id$: 'source' })
+        foo.load$({ relationship$: reltemplate, fields$: ['p1'] }, verify(done, function (bar) {
+          Assert.isNotNull(bar)
+          Assert.equal(bar.canon$({object: true}).name, 'bar')
+          Assert.equal(bar.p1, 'v2')
+          Assert.isNotOk(bar.p2)
+          Assert.isNotOk(bar.id)
+        }))
+      })
+
       it('should return null for non existing relationship', function (done) {
         var foo = si.make('foo', { id: 'source' })
         var rel = {
@@ -348,6 +359,19 @@ function basictest (settings) {
         var foo = si.make('foo', { id: 'source' })
         foo.list$({ relationship$: reltemplate }, verify(done, function (res) {
           Assert.lengthOf(res, 2)
+        }))
+      })
+
+      it('should load selected fields of all related elements', function (done) {
+        var foo = si.make('foo', { id: 'source' })
+        foo.list$({ relationship$: reltemplate, fields$: ['p1'] }, verify(done, function (res) {
+          Assert.lengthOf(res, 2)
+          res.forEach(function (result) {
+            Assert.equal(result.canon$({object: true}).name, 'bar')
+            Assert.isOk(result.p1)
+            Assert.isNotOk(result.p2)
+            Assert.isNotOk(result.id)
+          })
         }))
       })
 
@@ -1541,7 +1565,6 @@ function cyphertest (settings) {
         }
         dbInst.query({ cypher: 'MATCH (n:product) RETURN n ORDER BY n.price', name$: 'product' }, verify(done, function (list) {
           Assert.lengthOf(list, 2)
-
           Assert.equal(list[0].entity$, '-/-/product')
           Assert.equal(list[0].name, 'apple')
           Assert.equal(list[0].price, 100)
