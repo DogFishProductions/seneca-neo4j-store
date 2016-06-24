@@ -84,6 +84,81 @@ function createRelationships (si, name, data, relationships) {
   }
 }
 
+function extendedtest (settings) {
+  var si = settings.seneca
+  var script = settings.script || Lab.script()
+
+  var describe = script.describe
+  var it = script.it
+  var before = script.before
+
+  var reltemp = {
+    relatedNodeLabel: 'bar',
+    type: 'RELATED_TO',
+    data: {
+      name: "Plenty O'Tool"
+    }
+  }
+
+  describe('Extended Tests', function () {
+    describe('Save and Load Node', function () {
+      before(clearDb(si))
+      before(createEntities(si, 'foo', [{
+        id$: 'test',
+        name: "Flann O'Brien"
+      }]))
+      before(createEntities(si, 'fin', [{
+        id$: 'source',
+        p1: 'v1',
+        p2: 'v2'
+      }]))
+      before(createEntities(si, 'bar', [{
+        id$: 'sink',
+        name: "Flann O'Brien"
+      }]))
+      before(createRelationships(si, 'fin', { id: 'source' }, [{ relationship$: reltemp }]))
+
+      it('should load an entity with an apostrophe in a property value', function (done) {
+        var foo = si.make('foo')
+        foo.load$('test', verify(done, function (foo1) {
+          Assert.isNotNull(foo1)
+          Assert.equal(foo1.id, 'test')
+          Assert.equal(foo1.name, "Flann O'Brien")
+        }))
+      })
+
+      it('should list an entity with an apostrophe in a property value', function (done) {
+        var foo = si.make('foo')
+        foo.list$({ name: "Flann O'Brien" }, verify(done, function (foo1) {
+          Assert.isNotNull(foo1)
+          Assert.equal(foo1[0].id, 'test')
+          Assert.equal(foo1[0].name, "Flann O'Brien")
+        }))
+      })
+
+      it('should load a related entity with an apostrophe in a relationship value', function (done) {
+        var fin = si.make('fin', { id$: 'source' })
+        fin.load$({ relationship$: reltemp }, verify(done, function (bar) {
+          Assert.isNotNull(bar)
+          Assert.equal(bar.canon$({object: true}).name, 'bar')
+          Assert.equal(bar.id, 'sink')
+          Assert.equal(bar.name, "Flann O'Brien")
+        }))
+      })
+
+      it('should load a related entity with an apostrophe in a relationship value and an apostrophe in a related entity property', function (done) {
+        var fin = si.make('fin', { id$: 'source' })
+        fin.load$({ relationship$: reltemp, name: "Flann O'Brien" }, verify(done, function (bar) {
+          Assert.isNotNull(bar)
+          Assert.equal(bar.canon$({object: true}).name, 'bar')
+          Assert.equal(bar.id, 'sink')
+          Assert.equal(bar.name, "Flann O'Brien")
+        }))
+      })
+    })
+  })
+}
+
 function basictest (settings) {
   var si = settings.seneca
   var script = settings.script || Lab.script()
@@ -1604,5 +1679,6 @@ module.exports = {
   sorttest: sorttest,
   limitstest: limitstest,
   cyphertest: cyphertest,
+  extendedtest: extendedtest,
   verify: verify
 }
