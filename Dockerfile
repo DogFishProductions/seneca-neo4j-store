@@ -31,7 +31,7 @@ RUN npm install -g npm \
 
 WORKDIR /home/redjam
 # Clone the repo locally
-RUN git clone https://github.com/redjamjar/seneca-neo4j-store.git
+RUN git clone https://github.com/DogFishProductions/seneca-neo4j-store.git
 RUN mv /home/redjam/seneca-neo4j-store /home/redjam/src
 RUN mkdir /home/redjam/src/coverage
 RUN chown -R redjam:redjam /home/redjam

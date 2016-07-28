@@ -139,7 +139,7 @@ Note also that, unlike other data stores, this data store does use attributes fr
 
 As with all seneca stores, you can access the native driver.
 
-`entity.native$(function(err, dbinst){ cypher: ..., params: ..., name$: ...})`
+`entity.native$(function(err, dbInst){ cypher: ..., params: ..., name$: ...})`
 
 The native driver takes 3 parameters:
 
@@ -149,11 +149,11 @@ The native driver takes 3 parameters:
 
 - `name$` - The entity name to be associated with the returned results, as in `$-/-/<name>;...`.  If not supplied, the entity name will be 'entity', as in `$-/-/entity;...` (optional)
 
-With the GraphDatabase object you can perform any query using [Cypher](http://docs.neo4j.org/chunked/stable/cypher-query-lang.html). Fore more informatino about node-neo4j chekout [here](http://coffeedoc.info/github/thingdom/node-neo4j/master/)
+With the dbInst object you can perform any query using [Cypher](http://docs.neo4j.org/chunked/stable/cypher-query-lang.html).
 
 ```javascript
 entity.native$(function(err, dbinst){
-  dbinst.query({ cypher: 'MATCH (n) RETURN n LIMIT 25' }, function (err,results){
+  dbInst.query({ cypher: 'MATCH (n) RETURN n LIMIT 25' }, function (err,results){
     if(!err){
       return results;
     }

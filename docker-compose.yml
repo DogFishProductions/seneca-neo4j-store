@@ -5,7 +5,7 @@ store:
   - $PWD:/home/redjam/src
  links:
   - neo4j
- command: bash -c "cd /home/redjam/src && npm install && npm install seneca${SENECA_VER} && nodemon -L ./neo4j-store.js"
+ command: bash -c "cd /home/redjam/src && npm install && npm install seneca${SENECA_VER} && nodemon -L --ignore '*.test.js' ./neo4j-store.js"
 
 test:
  build: .
