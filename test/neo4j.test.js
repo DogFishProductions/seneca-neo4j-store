@@ -71,7 +71,7 @@ describe('Neo4J suite tests ', function () {
     seneca: si,
     script: lab
   })
-/*
+
   Relationships.basictest({
     seneca: si,
     script: lab
@@ -95,5 +95,5 @@ describe('Neo4J suite tests ', function () {
   Relationships.extendedtest({
     seneca: si,
     script: lab
-  })//*/
+  })
 })

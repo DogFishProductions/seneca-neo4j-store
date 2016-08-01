@@ -20,8 +20,6 @@ var _storeName = 'neo4j-store'
 var _actionRole = 'neo4j'
 var _internals = {}
 
-var Util = require('util')
-
 /** @function _executeCypher
  *
  *  @summary Runs a query on the graphstore and returns the result as an array.
@@ -34,9 +32,6 @@ var Util = require('util')
  *  @returns  {Promise} The promise of a result.
  */
 var _executeCypher = function (cypher, params) {
-console.log('cypher: ' + cypher)
-console.log('params: ' + Util.inspect(params))
-console.log('-----------------------')
   var _deferred = Q.defer()
   if (_.isEmpty(cypher)) {
     _deferred.resolve([])

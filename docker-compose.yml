@@ -2,26 +2,26 @@ store:
  build: .
  dockerfile: dev-Dockerfile
  volumes:
-  - $PWD:/home/redjam/src
+  - $PWD:/home/dogfish/src
  links:
   - neo4j
- command: bash -c "cd /home/redjam/src && npm install && npm install seneca${SENECA_VER} && nodemon -L --ignore '*.test.js' ./neo4j-store.js"
+ command: ash -c "cd /home/dogfish/src && npm install && npm install --only=dev && npm install seneca${SENECA_VER} && nodemon -L --ignore '*.test.js' ./neo4j-store.js"
 
 test:
  build: .
  links:
   - neo4j
- user: redjam
- command: bash -c "cd /home/redjam/src && npm install && npm install seneca${SENECA_VER} && npm test && npm run coverage"
+ user: dogfish
+ command: ash -c "cd /home/dogfish/src && npm install && npm install --only=dev && npm install seneca${SENECA_VER} && npm test && npm run coverage"
 
 coverage:
  build: .
  volumes:
-  - $PWD/coverage:/home/redjam/src/coverage
+  - $PWD/coverage:/home/dogfish/src/coverage
  links:
   - neo4j
- user: redjam
- command: bash -c "cd /home/redjam/src && npm install && npm install seneca${SENECA_VER} && npm run coverage"
+ user: dogfish
+ command: bash -c "cd /home/dogfish/src && npm install && npm install --only=dev && npm install seneca${SENECA_VER} && npm run coverage"
 
 neo4j:
  image: neo4j:2.3.2
