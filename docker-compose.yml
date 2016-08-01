@@ -21,7 +21,7 @@ coverage:
  links:
   - neo4j
  user: dogfish
- command: bash -c "cd /home/dogfish/src && npm install && npm install --only=dev && npm install seneca${SENECA_VER} && npm run coverage"
+ command: ash -c "cd /home/dogfish/src && npm install && npm install --only=dev && npm install seneca${SENECA_VER} && npm run coverage"
 
 neo4j:
  image: neo4j:2.3.2
