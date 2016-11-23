@@ -10,7 +10,7 @@
 
 var _ = require('lodash')
 var Request = require('request')
-var Uuid = require('node-uuid')
+var Uuid = require('uuid')
 var DefaultConfig = require('./config/default_config.json')
 var StatementBuilder = require('./lib/statement-builder.js')
 

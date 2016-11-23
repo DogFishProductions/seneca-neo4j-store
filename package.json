@@ -5,10 +5,12 @@
   "main": "neo4j-store.js",
   "license": "MIT",
   "author": "Paul Nebel <paul@nebel.io> (http://www.paulnebel.io)",
-  "contributors" :[{
-    "name": "Michele Capra",
-    "email": "michelecapra83@gmail.com"
-  }],
+  "contributors": [
+    {
+      "name": "Michele Capra",
+      "email": "michelecapra83@gmail.com"
+    }
+  ],
   "bugs": {
     "url": "https://github.com/DogFishProductions/seneca-neo4j-store/issues"
   },
@@ -61,10 +63,10 @@
     "seneca-entity": "0.0.1"
   },
   "dependencies": {
+    "lodash": "^4.12.0",
     "q": "^1.4.1",
     "request": "^2.69.0",
-    "lodash": "^4.12.0",
-    "node-uuid": "^1.4.7"
+    "uuid": "^3.0.0"
   },
   "directories": {
     "doc": "doc",
